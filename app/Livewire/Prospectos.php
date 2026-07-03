@@ -13,6 +13,22 @@ class Prospectos extends Component
     public $search = '';
     public $statusFilter = '';
 
+    // Create Modal Properties
+    public $showCreateModal = false;
+    public $empresa = '';
+    public $director_nombre = '';
+    public $correo_corporativo = '';
+    public $telefono_whatsapp = '';
+    public $estado_contacto = 'pendiente';
+
+    protected $rules = [
+        'empresa' => 'required|string|max:255',
+        'director_nombre' => 'nullable|string|max:255',
+        'correo_corporativo' => 'nullable|email|max:255',
+        'telefono_whatsapp' => 'nullable|string|max:255',
+        'estado_contacto' => 'required|in:pendiente,enviado,respondido,descartado',
+    ];
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -21,6 +37,37 @@ class Prospectos extends Component
     public function updatingStatusFilter()
     {
         $this->resetPage();
+    }
+
+    public function openCreateModal()
+    {
+        $this->resetErrorBag();
+        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto']);
+        $this->estado_contacto = 'pendiente';
+        $this->showCreateModal = true;
+    }
+
+    public function closeCreateModal()
+    {
+        $this->showCreateModal = false;
+    }
+
+    public function save()
+    {
+        $this->validate();
+
+        Prospecto::create([
+            'empresa' => $this->empresa,
+            'director_nombre' => $this->director_nombre,
+            'correo_corporativo' => $this->correo_corporativo,
+            'telefono_whatsapp' => $this->telefono_whatsapp,
+            'estado_contacto' => $this->estado_contacto,
+        ]);
+
+        $this->showCreateModal = false;
+        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto']);
+        
+        session()->flash('message', 'Prospecto creado exitosamente.');
     }
 
     public function updateStatus($id, $status)

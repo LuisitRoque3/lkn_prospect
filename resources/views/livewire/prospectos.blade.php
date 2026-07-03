@@ -11,11 +11,23 @@
                     Control de Prospectos
                 </h1>
             </div>
-            <div class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/50">
-                <span class="w-2.5 h-2.5 bg-[#a3583d] rounded-full animate-pulse"></span>
-                <span>Base de Datos Activa</span>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <button wire:click="openCreateModal" class="inline-flex items-center gap-2 px-4 py-2 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm">
+                    <span>+ Nuevo Prospecto</span>
+                </button>
+                <div class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/50">
+                    <span class="w-2.5 h-2.5 bg-[#a3583d] rounded-full animate-pulse"></span>
+                    <span>Base de Datos Activa</span>
+                </div>
             </div>
         </header>
+
+        @if (session()->has('message'))
+            <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex justify-between items-center shadow-sm">
+                <span>{{ session('message') }}</span>
+                <button type="button" class="text-emerald-800 font-bold hover:underline" onclick="this.parentElement.remove()">✕</button>
+            </div>
+        @endif
 
         <!-- FILTROS Y BUSCADOR -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -193,6 +205,78 @@
         <div class="pt-4">
             {{ $prospectos->links() }}
         </div>
+
+        <!-- MODAL DE CREACIÓN -->
+        @if($showCreateModal)
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+                <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-xl w-full max-w-lg space-y-6 transform transition-all">
+                    
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center pb-4 border-b border-[#3d2b1f]/10">
+                        <h2 class="text-sm font-black uppercase tracking-wider text-[#3d2b1f]">
+                            Agregar Nuevo Prospecto
+                        </h2>
+                        <button wire:click="closeCreateModal" class="text-[#3d2b1f]/60 hover:text-[#3d2b1f] text-lg font-bold">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Modal Body Form -->
+                    <form wire:submit.prevent="save" class="space-y-4 text-xs">
+                        <!-- Empresa -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Empresa *</label>
+                            <input type="text" wire:model="empresa" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                            @error('empresa') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Director -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Director / Contacto</label>
+                            <input type="text" wire:model="director_nombre" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                            @error('director_nombre') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Correo Corporativo -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Correo Corporativo</label>
+                            <input type="email" wire:model="correo_corporativo" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                            @error('correo_corporativo') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Teléfono / WhatsApp -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Teléfono / WhatsApp</label>
+                            <input type="text" wire:model="telefono_whatsapp" placeholder="Ej: +521234567890" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                            @error('telefono_whatsapp') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Estado de Contacto -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Estado de Contacto</label>
+                            <select wire:model="estado_contacto" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                                <option value="pendiente">Pendiente</option>
+                                <option value="enviado">Enviado (Contactado)</option>
+                                <option value="respondido">Respondido (Interesado)</option>
+                                <option value="descartado">Descartado</option>
+                            </select>
+                            @error('estado_contacto') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end gap-2 pt-4 border-t border-[#3d2b1f]/10">
+                            <button type="button" wire:click="closeCreateModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm">
+                                Guardar Prospecto
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        @endif
         
     </div>
 </div>
