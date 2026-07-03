@@ -29,10 +29,10 @@
                 <select wire:model.live="statusFilter" 
                         class="w-full px-4 py-3.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
                     <option value="">Todos los Estados</option>
-                    <option value="Nuevo">Nuevo</option>
-                    <option value="Contactado">Contactado</option>
-                    <option value="Interesado">Interesado</option>
-                    <option value="Cerrado">Venta Cerrada</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="enviado">Enviado (Contactado)</option>
+                    <option value="respondido">Respondido (Interesado)</option>
+                    <option value="descartado">Descartado</option>
                 </select>
             </div>
         </div>
@@ -47,12 +47,12 @@
                             {{ $prospecto->empresa }}
                         </h3>
                         <span class="shrink-0 inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
-                            {{ $prospecto->estado_contacto == 'Nuevo' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'Contactado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'Interesado' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'Cerrado' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : '' }}
+                            {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
+                            {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
+                            {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
+                            {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
                         ">
-                            {{ $prospecto->estado_contacto ?: 'Nuevo' }}
+                            {{ $prospecto->estado_contacto ?: 'pendiente' }}
                         </span>
                     </div>
 
@@ -83,22 +83,22 @@
 
                     <!-- Acciones Rápidas -->
                     <div class="flex justify-end gap-2 border-t border-[#3d2b1f]/5 pt-3">
-                        @if($prospecto->estado_contacto !== 'Contactado')
-                            <button wire:click="updateStatus({{ $prospecto->id }}, 'Contactado')" 
-                                    class="px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                                Contactar
+                        @if($prospecto->estado_contacto !== 'enviado')
+                            <button wire:click="updateStatus({{ $prospecto->id }}, 'enviado')" 
+                                    class="px-3 py-2 bg-[#fdf8f0] hover:bg-amber-100 border border-amber-200 text-amber-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                Enviado
                             </button>
                         @endif
-                        @if($prospecto->estado_contacto !== 'Interesado')
-                            <button wire:click="updateStatus({{ $prospecto->id }}, 'Interesado')" 
+                        @if($prospecto->estado_contacto !== 'respondido')
+                            <button wire:click="updateStatus({{ $prospecto->id }}, 'respondido')" 
                                     class="px-3 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                                Interesar
+                                Respondido
                             </button>
                         @endif
-                        @if($prospecto->estado_contacto !== 'Cerrado')
-                            <button wire:click="updateStatus({{ $prospecto->id }}, 'Cerrado')" 
-                                    class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                                Cerrar Venta
+                        @if($prospecto->estado_contacto !== 'descartado')
+                            <button wire:click="updateStatus({{ $prospecto->id }}, 'descartado')" 
+                                    class="px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                Descartar
                             </button>
                         @endif
                     </div>
@@ -149,31 +149,31 @@
                             </td>
                             <td class="p-4">
                                 <span class="inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
-                                    {{ $prospecto->estado_contacto == 'Nuevo' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'Contactado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'Interesado' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'Cerrado' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : '' }}
+                                    {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
+                                    {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
+                                    {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
+                                    {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
                                 ">
-                                    {{ $prospecto->estado_contacto ?: 'Nuevo' }}
+                                    {{ $prospecto->estado_contacto ?: 'pendiente' }}
                                 </span>
                             </td>
                             <td class="p-4 text-right space-x-1">
-                                @if($prospecto->estado_contacto !== 'Contactado')
-                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'Contactado')" 
+                                @if($prospecto->estado_contacto !== 'enviado')
+                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'enviado')" 
                                             class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all">
-                                        Contactar
+                                        Enviado
                                     </button>
                                 @endif
-                                @if($prospecto->estado_contacto !== 'Interesado')
-                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'Interesado')" 
+                                @if($prospecto->estado_contacto !== 'respondido')
+                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'respondido')" 
                                             class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all">
-                                        Interesar
+                                        Respondido
                                     </button>
                                 @endif
-                                @if($prospecto->estado_contacto !== 'Cerrado')
-                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'Cerrado')" 
-                                            class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all">
-                                        Cerrar Venta
+                                @if($prospecto->estado_contacto !== 'descartado')
+                                    <button wire:click="updateStatus({{ $prospecto->id }}, 'descartado')" 
+                                            class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-800 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all">
+                                        Descartar
                                     </button>
                                 @endif
                             </td>
