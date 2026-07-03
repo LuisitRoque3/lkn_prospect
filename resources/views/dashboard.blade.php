@@ -8,7 +8,7 @@
     @livewireStyles
 </head>
 <body class="bg-gray-50 text-gray-900">
-    <x-prospectos />
+    <livewire:prospectos />
     @livewireScripts
 </body>
 </html>
