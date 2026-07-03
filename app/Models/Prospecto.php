@@ -11,3 +11,4 @@ class Prospecto extends Model
 
     const CREATED_AT = 'creado_at';
     const UPDATED_AT = 'actualizado_at';
+}
