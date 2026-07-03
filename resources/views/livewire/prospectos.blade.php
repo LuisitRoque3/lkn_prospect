@@ -74,7 +74,13 @@
                             <span class="text-sm">👤</span>
                             <div>
                                 <p class="font-bold text-[#3d2b1f]">{{ $prospecto->director_nombre }}</p>
-                                <p class="text-[10px] text-[#3d2b1f]/50">{{ $prospecto->correo_corporativo }}</p>
+                                @if($prospecto->correo_corporativo)
+                                    <a href="mailto:{{ $prospecto->correo_corporativo }}" class="block text-[10px] text-[#3d2b1f]/50 hover:text-[#a3583d] transition-colors underline decoration-dotted">
+                                        {{ $prospecto->correo_corporativo }}
+                                    </a>
+                                @else
+                                    <p class="text-[10px] text-[#3d2b1f]/30">—</p>
+                                @endif
                             </div>
                         </div>
                         @if($prospecto->telefono_whatsapp)
@@ -142,7 +148,13 @@
                             </td>
                             <td class="p-4">
                                 <div class="font-bold text-[#3d2b1f]">{{ $prospecto->director_nombre }}</div>
-                                <div class="text-[10px] text-[#3d2b1f]/50">{{ $prospecto->correo_corporativo }}</div>
+                                @if($prospecto->correo_corporativo)
+                                    <a href="mailto:{{ $prospecto->correo_corporativo }}" class="inline-block text-[10px] text-[#3d2b1f]/50 hover:text-[#a3583d] transition-colors underline decoration-dotted">
+                                        {{ $prospecto->correo_corporativo }}
+                                    </a>
+                                @else
+                                    <div class="text-[10px] text-[#3d2b1f]/30">—</div>
+                                @endif
                             </td>
                             <td class="p-4">
                                 @if($prospecto->telefono_whatsapp)
