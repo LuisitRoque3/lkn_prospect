@@ -121,6 +121,15 @@
                                 </a>
                             </div>
                         @endif
+                        @endif
+                        @if($prospecto->open_count > 0)
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#3d2b1f]/5 mt-2">
+                                <div class="flex items-center gap-1.5 text-[10px] text-blue-700 font-bold uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-lg">
+                                    <span>👁️ Abierto {{ $prospecto->open_count }} vez/veces</span>
+                                </div>
+                                <span class="text-[9px] text-[#3d2b1f]/50">{{ $prospecto->opened_at->diffForHumans() }}</span>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Acciones Rápidas -->
@@ -175,6 +184,12 @@
                         <tr class="hover:bg-[#fdfaf6]/50 transition-colors">
                             <td class="p-4 font-black uppercase tracking-tight text-[#3d2b1f] max-w-xs truncate">
                                 {{ $prospecto->empresa }}
+                                @if($prospecto->open_count > 0)
+                                    <div class="mt-2 flex items-center gap-1.5 text-[9px] text-blue-700 font-bold uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-lg w-fit border border-blue-100">
+                                        <span>👁️ Abierto {{ $prospecto->open_count }}x</span>
+                                        <span class="text-blue-700/50">({{ $prospecto->opened_at->diffForHumans() }})</span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="p-4">
                                 <div class="font-bold text-[#3d2b1f]">{{ $prospecto->director_nombre }}</div>

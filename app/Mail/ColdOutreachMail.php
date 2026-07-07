@@ -31,7 +31,7 @@ class ColdOutreachMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Oportunidad de colaboración con ' . $this->prospecto->empresa,
+            subject: 'Certeza operativa y el crecimiento de ' . $this->prospecto->empresa,
         );
     }
 
