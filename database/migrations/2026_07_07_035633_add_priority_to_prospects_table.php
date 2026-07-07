@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('prospects', function (Blueprint $table) {
+        Schema::table('prospectos_scrapping', function (Blueprint $table) {
             $table->enum('priority', ['alfa', 'bravo', 'charlie'])->default('charlie')->after('estado_contacto');
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('prospects', function (Blueprint $table) {
+        Schema::table('prospectos_scrapping', function (Blueprint $table) {
             $table->dropColumn('priority');
         });
     }

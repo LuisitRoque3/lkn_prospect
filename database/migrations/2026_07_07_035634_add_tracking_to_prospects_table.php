@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('prospects', function (Blueprint $table) {
+        Schema::table('prospectos_scrapping', function (Blueprint $table) {
             $table->string('tracking_uuid')->nullable()->unique()->after('id');
             $table->timestamp('opened_at')->nullable()->after('estado_contacto');
             $table->integer('open_count')->default(0)->after('opened_at');
