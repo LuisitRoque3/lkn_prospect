@@ -28,6 +28,12 @@
                 <button type="button" class="text-emerald-800 font-bold hover:underline" onclick="this.parentElement.remove()">✕</button>
             </div>
         @endif
+        @if (session()->has('error'))
+            <div class="p-4 bg-red-50 border border-red-200 text-red-800 text-xs rounded-2xl flex justify-between items-center shadow-sm">
+                <span>{{ session('error') }}</span>
+                <button type="button" class="text-red-800 font-bold hover:underline" onclick="this.parentElement.remove()">✕</button>
+            </div>
+        @endif
 
         <!-- FILTROS Y BUSCADOR -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -119,6 +125,12 @@
 
                     <!-- Acciones Rápidas -->
                     <div class="flex justify-end gap-2 border-t border-[#3d2b1f]/5 pt-3">
+                        @if($prospecto->correo_corporativo)
+                            <button wire:click="sendColdEmail({{ $prospecto->id }})" 
+                                    class="px-3 py-2 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm">
+                                Enviar Correo
+                            </button>
+                        @endif
                         @if($prospecto->estado_contacto !== 'enviado')
                             <button wire:click="updateStatus({{ $prospecto->id }}, 'enviado')" 
                                     class="px-3 py-2 bg-[#fdf8f0] hover:bg-amber-100 border border-amber-200 text-amber-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
@@ -211,6 +223,12 @@
                                 </div>
                             </td>
                             <td class="p-4 text-right space-x-1">
+                                @if($prospecto->correo_corporativo)
+                                    <button wire:click="sendColdEmail({{ $prospecto->id }})" 
+                                            class="px-2.5 py-1.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm">
+                                        Enviar Mail
+                                    </button>
+                                @endif
                                 @if($prospecto->estado_contacto !== 'enviado')
                                     <button wire:click="updateStatus({{ $prospecto->id }}, 'enviado')" 
                                             class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all">

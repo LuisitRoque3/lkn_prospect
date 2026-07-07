@@ -5,6 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Prospecto;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ColdOutreachMail;
 
 class Prospectos extends Component
 {
@@ -99,6 +101,28 @@ class Prospectos extends Component
         if ($prospecto) {
             $prospecto->priority = $priority;
             $prospecto->save();
+        }
+    }
+
+    public function sendColdEmail($id)
+    {
+        $prospecto = Prospecto::find($id);
+        if ($prospecto && $prospecto->correo_corporativo) {
+            // Generar UUID si es un prospecto viejo que no lo tiene
+            if (!$prospecto->tracking_uuid) {
+                $prospecto->tracking_uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+            
+            // Enviar correo
+            Mail::to($prospecto->correo_corporativo)->send(new ColdOutreachMail($prospecto));
+            
+            // Actualizar estado a enviado automáticamente
+            $prospecto->estado_contacto = 'enviado';
+            $prospecto->save();
+            
+            session()->flash('message', 'Correo de prospección enviado a ' . $prospecto->empresa);
+        } elseif ($prospecto) {
+            session()->flash('error', 'El prospecto ' . $prospecto->empresa . ' no tiene un correo registrado.');
         }
     }
 
