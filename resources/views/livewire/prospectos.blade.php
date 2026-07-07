@@ -72,7 +72,6 @@
                         <h3 class="text-sm font-black uppercase tracking-tight text-[#3d2b1f] leading-snug">
                             {{ $prospecto->empresa }}
                         </h3>
-                        </h3>
                         <div class="flex flex-col items-end gap-1">
                             <span class="shrink-0 inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
                                 {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
@@ -120,7 +119,6 @@
                                     <span>WhatsApp</span>
                                 </a>
                             </div>
-                        @endif
                         @endif
                         @if($prospecto->open_count > 0)
                             <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#3d2b1f]/5 mt-2">
