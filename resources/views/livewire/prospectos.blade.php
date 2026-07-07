@@ -37,14 +37,22 @@
                        placeholder="Buscar por empresa o director..." 
                        class="w-full pl-4 pr-4 py-3.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] placeholder-[#3d2b1f]/40 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
             </div>
-            <div>
+            </div>
+            <div class="flex gap-2">
                 <select wire:model.live="statusFilter" 
-                        class="w-full px-4 py-3.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                        class="w-1/2 px-4 py-3.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
                     <option value="">Todos los Estados</option>
                     <option value="pendiente">Pendiente</option>
-                    <option value="enviado">Enviado (Contactado)</option>
-                    <option value="respondido">Respondido (Interesado)</option>
+                    <option value="enviado">Enviado</option>
+                    <option value="respondido">Respondido</option>
                     <option value="descartado">Descartado</option>
+                </select>
+                <select wire:model.live="priorityFilter" 
+                        class="w-1/2 px-4 py-3.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                    <option value="">Prioridad</option>
+                    <option value="alfa">Alfa (Alta)</option>
+                    <option value="bravo">Bravo (Med)</option>
+                    <option value="charlie">Charlie (Baja)</option>
                 </select>
             </div>
         </div>
@@ -58,14 +66,24 @@
                         <h3 class="text-sm font-black uppercase tracking-tight text-[#3d2b1f] leading-snug">
                             {{ $prospecto->empresa }}
                         </h3>
-                        <span class="shrink-0 inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
-                            {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
-                            {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
-                        ">
-                            {{ $prospecto->estado_contacto ?: 'pendiente' }}
-                        </span>
+                        </h3>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="shrink-0 inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
+                                {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
+                                {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
+                                {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
+                                {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
+                            ">
+                                {{ $prospecto->estado_contacto ?: 'pendiente' }}
+                            </span>
+                            <span class="shrink-0 inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
+                                {{ $prospecto->priority == 'alfa' ? 'bg-red-100 text-red-800 border border-red-200' : '' }}
+                                {{ $prospecto->priority == 'bravo' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : '' }}
+                                {{ $prospecto->priority == 'charlie' || !$prospecto->priority ? 'bg-gray-100 text-gray-700 border border-gray-200' : '' }}
+                            ">
+                                {{ $prospecto->priority ?: 'charlie' }}
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Datos de Contacto -->
@@ -136,7 +154,7 @@
                         <th class="p-4 font-black uppercase text-[#a3583d] tracking-wider">Empresa</th>
                         <th class="p-4 font-black uppercase text-[#3d2b1f]/70 tracking-wider">Director / Contacto</th>
                         <th class="p-4 font-black uppercase text-[#3d2b1f]/70 tracking-wider">Teléfono / WhatsApp</th>
-                        <th class="p-4 font-black uppercase text-[#a3583d] tracking-wider">Estado</th>
+                        <th class="p-4 font-black uppercase text-[#a3583d] tracking-wider">Estado & Prioridad</th>
                         <th class="p-4 font-black uppercase text-[#3d2b1f]/70 tracking-wider text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -172,14 +190,25 @@
                                 @endif
                             </td>
                             <td class="p-4">
-                                <span class="inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
-                                    {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
-                                    {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
-                                ">
-                                    {{ $prospecto->estado_contacto ?: 'pendiente' }}
-                                </span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <span class="inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
+                                        {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
+                                        {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
+                                        {{ $prospecto->estado_contacto == 'respondido' ? 'bg-purple-50 text-purple-700 border border-purple-100' : '' }}
+                                        {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
+                                    ">
+                                        {{ $prospecto->estado_contacto ?: 'pendiente' }}
+                                    </span>
+                                    <select wire:change="updatePriority({{ $prospecto->id }}, $event.target.value)" class="text-[9px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border cursor-pointer
+                                        {{ $prospecto->priority == 'alfa' ? 'bg-red-100 text-red-800 border-red-200' : '' }}
+                                        {{ $prospecto->priority == 'bravo' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : '' }}
+                                        {{ $prospecto->priority == 'charlie' || !$prospecto->priority ? 'bg-gray-100 text-gray-700 border-gray-200' : '' }}
+                                    ">
+                                        <option value="alfa" {{ $prospecto->priority == 'alfa' ? 'selected' : '' }}>ALFA</option>
+                                        <option value="bravo" {{ $prospecto->priority == 'bravo' ? 'selected' : '' }}>BRAVO</option>
+                                        <option value="charlie" {{ $prospecto->priority == 'charlie' ? 'selected' : '' }}>CHARLIE</option>
+                                    </select>
+                                </div>
                             </td>
                             <td class="p-4 text-right space-x-1">
                                 @if($prospecto->estado_contacto !== 'enviado')
@@ -273,6 +302,17 @@
                                 <option value="descartado">Descartado</option>
                             </select>
                             @error('estado_contacto') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Prioridad -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70">Prioridad Táctica</label>
+                            <select wire:model="priority" class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] transition-all">
+                                <option value="alfa">Alfa (Alta Prioridad)</option>
+                                <option value="bravo">Bravo (Media Prioridad)</option>
+                                <option value="charlie">Charlie (Baja Prioridad)</option>
+                            </select>
+                            @error('priority') <span class="text-red-600 text-[10px]">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Actions -->

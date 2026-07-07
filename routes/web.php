@@ -9,3 +9,5 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->name('dashboard');
+
+Route::get('/track/{uuid}', [\App\Http\Controllers\TrackingController::class, 'track'])->name('tracking.pixel');

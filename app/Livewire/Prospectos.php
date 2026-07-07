@@ -12,6 +12,7 @@ class Prospectos extends Component
 
     public $search = '';
     public $statusFilter = '';
+    public $priorityFilter = '';
 
     // Create Modal Properties
     public $showCreateModal = false;
@@ -20,6 +21,7 @@ class Prospectos extends Component
     public $correo_corporativo = '';
     public $telefono_whatsapp = '';
     public $estado_contacto = 'pendiente';
+    public $priority = 'charlie';
 
     protected $rules = [
         'empresa' => 'required|string|max:255',
@@ -27,6 +29,7 @@ class Prospectos extends Component
         'correo_corporativo' => 'nullable|email|max:255',
         'telefono_whatsapp' => 'nullable|string|max:255',
         'estado_contacto' => 'required|in:pendiente,enviado,respondido,descartado',
+        'priority' => 'required|in:alfa,bravo,charlie',
     ];
 
     public function updatingSearch()
@@ -39,11 +42,17 @@ class Prospectos extends Component
         $this->resetPage();
     }
 
+    public function updatingPriorityFilter()
+    {
+        $this->resetPage();
+    }
+
     public function openCreateModal()
     {
         $this->resetErrorBag();
-        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto']);
+        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto', 'priority']);
         $this->estado_contacto = 'pendiente';
+        $this->priority = 'charlie';
         $this->showCreateModal = true;
     }
 
@@ -56,16 +65,21 @@ class Prospectos extends Component
     {
         $this->validate();
 
+        // Generar uuid para tracking
+        $uuid = (string) \Illuminate\Support\Str::uuid();
+
         Prospecto::create([
             'empresa' => $this->empresa,
             'director_nombre' => $this->director_nombre,
             'correo_corporativo' => $this->correo_corporativo,
             'telefono_whatsapp' => $this->telefono_whatsapp,
             'estado_contacto' => $this->estado_contacto,
+            'priority' => $this->priority,
+            'tracking_uuid' => $uuid,
         ]);
 
         $this->showCreateModal = false;
-        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto']);
+        $this->reset(['empresa', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto', 'priority']);
         
         session()->flash('message', 'Prospecto creado exitosamente.');
     }
@@ -75,6 +89,15 @@ class Prospectos extends Component
         $prospecto = Prospecto::find($id);
         if ($prospecto) {
             $prospecto->estado_contacto = $status;
+            $prospecto->save();
+        }
+    }
+
+    public function updatePriority($id, $priority)
+    {
+        $prospecto = Prospecto::find($id);
+        if ($prospecto) {
+            $prospecto->priority = $priority;
             $prospecto->save();
         }
     }
@@ -92,6 +115,10 @@ class Prospectos extends Component
 
         if ($this->statusFilter) {
             $query->where('estado_contacto', $this->statusFilter);
+        }
+
+        if ($this->priorityFilter) {
+            $query->where('priority', $this->priorityFilter);
         }
 
         return view('livewire.prospectos', [
