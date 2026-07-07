@@ -7,15 +7,11 @@
 <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
     <p>Hola {{ $prospecto->director_nombre ?: 'equipo' }},</p>
 
-    <p>He seguido de cerca el trabajo de <strong>{{ $prospecto->empresa }}</strong> y es evidente que han logrado escalar de manera importante.</p>
+    <p>He notado el rápido crecimiento de <strong>{{ $prospecto->empresa }}</strong>. En mi experiencia, al escalar a este ritmo, casi siempre se llega a un punto crítico: el volumen del negocio supera su capacidad para organizar la información, y las proyecciones terminan dependiendo de la intuición o de hojas de cálculo saturadas.</p>
 
-    <p>Sin embargo, en mi experiencia analizando operaciones, cuando una empresa crece a este ritmo casi siempre llega a un punto de quiebre estructural: el volumen del negocio supera su forma de organizar la información. Cuando esto ocurre, las proyecciones financieras y operativas empiezan a depender de la intuición o de cruzar datos manualmente en hojas de cálculo que ya no dan abasto.</p>
+    <p>En Locknode resolvemos este cuello de botella. Implementamos infraestructura de control basada en matemática aplicada —sin estimaciones genéricas ni "alucinaciones"— para darte certeza absoluta sobre el estado real de tu operación y sus proyecciones.</p>
 
-    <p>En Locknode nos especializamos exactamente en resolver este cuello de botella. No ofrecemos estimaciones genéricas ni tecnología que arroja alucinaciones; implementamos una infraestructura de control que estructura matemática aplicada sobre tus datos reales para darte certeza absoluta del estado de tu operación y hacia dónde se proyecta.</p>
-
-    <p>Me encantaría tener una breve llamada de 10 minutos para mostrarte cómo funciona nuestro modelo de control. ¿Cómo se ve tu agenda para la próxima semana?</p>
-    
-    <p>Si estabilizar el flujo de datos no es la máxima prioridad del equipo en este momento, lo entiendo perfectamente.</p>
+    <p>¿Tendrías 10 minutos la próxima semana para mostrarte cómo opera nuestro modelo? Si estabilizar sus datos no es prioridad ahora mismo, lo entiendo perfectamente.</p>
 
     <p>Saludos,</p>
     <p>
