@@ -8,9 +8,9 @@
                     Locknode CRM
                 </span>
                 <h1 class="text-3xl font-black uppercase tracking-tight text-[#3d2b1f]">
-                    Centro de Mando Omnicanal
+                    Panel de Nuevos Invitados
                 </h1>
-                <p class="text-xs text-[#3d2b1f]/60 font-medium">Gestiona tu prospección corporativa y local (WhatsApp & Email).</p>
+                <p class="text-xs text-[#3d2b1f]/60 font-medium">Gestiona tu prospección corporativa y local.</p>
             </div>
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <button wire:click="openCreateModal" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
@@ -109,11 +109,38 @@
                                         Sin Email
                                     </span>
                                 @endif
+                                @if($prospecto->telefono_whatsapp)
+                                    <span class="inline-flex mt-1 ml-1 items-center gap-1 bg-green-50 px-2 py-0.5 rounded text-[10px] font-mono text-green-700">
+                                        📞 {{ $prospecto->telefono_whatsapp }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
 
-                        <!-- Botones de Acción (WhatsApp y Email) -->
-                        <div class="grid grid-cols-2 gap-2 pt-2">
+                        <!-- Botones de Acción (Omnicanal y Edición) -->
+                        <div class="grid grid-cols-4 gap-2 pt-2">
+                            <!-- Botón Editar -->
+                            <button wire:click="edit({{ $prospecto->id }})" 
+                                    class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl transition-all group/edit">
+                                <span class="text-base group-hover/edit:scale-110 transition-transform">✏️</span>
+                                <span class="text-[9px] font-black uppercase tracking-wider">Editar</span>
+                            </button>
+
+                            <!-- Botón Llamar -->
+                            @if($prospecto->telefono_whatsapp)
+                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $prospecto->telefono_whatsapp) }}" 
+                                   class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl transition-all group/call">
+                                    <span class="text-base group-hover/call:scale-110 transition-transform">📞</span>
+                                    <span class="text-[9px] font-black uppercase tracking-wider">Llamar</span>
+                                </a>
+                            @else
+                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
+                                    <span class="text-base opacity-50">📞</span>
+                                    <span class="text-[9px] font-black uppercase tracking-wider">Sin Tel.</span>
+                                </div>
+                            @endif
+
+                            <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
                                 <a href="{{ $prospecto->whatsapp_url }}" 
                                    target="_blank" 
@@ -128,6 +155,7 @@
                                 </div>
                             @endif
 
+                            <!-- Botón Email -->
                             @if($prospecto->correo_corporativo && $prospecto->correo_corporativo !== 'N/A')
                                 <button wire:click="sendColdEmail({{ $prospecto->id }})" 
                                         class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-[#a3583d]/10 hover:bg-[#a3583d]/20 border border-[#a3583d]/20 text-[#8f4730] rounded-xl transition-all group/mail">
@@ -198,9 +226,27 @@
                                 </div>
                             </td>
 
-                            <!-- Columna 3: Omnicanal -->
+                            <!-- Columna 3: Omnicanal y Edición -->
                             <td class="p-5 text-center">
                                 <div class="flex justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <!-- Edit Button -->
+                                    <button wire:click="edit({{ $prospecto->id }})" 
+                                            title="Editar Prospecto"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-50 hover:bg-blue-500 hover:text-white border border-blue-200 text-blue-600 rounded-lg transition-all shadow-sm transform hover:scale-110">
+                                        ✏️
+                                    </button>
+
+                                    <!-- Call Button -->
+                                    @if($prospecto->telefono_whatsapp)
+                                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $prospecto->telefono_whatsapp) }}" 
+                                           title="Llamar Prospecto"
+                                           class="inline-flex items-center justify-center w-8 h-8 bg-gray-50 hover:bg-gray-200 border border-gray-200 text-gray-700 rounded-lg transition-all shadow-sm transform hover:scale-110">
+                                            📞
+                                        </a>
+                                    @else
+                                        <div class="inline-flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-100 text-gray-300 rounded-lg cursor-not-allowed" title="Sin Teléfono">📞</div>
+                                    @endif
+
                                     <!-- WhatsApp Button -->
                                     @if($prospecto->telefono_whatsapp)
                                         <a href="{{ $prospecto->whatsapp_url }}" 
@@ -264,6 +310,95 @@
         <div class="pt-4">
             {{ $prospectos->links() }}
         </div>
+        
+        <!-- MODAL DE CREACIÓN / EDICIÓN -->
+        @if($showCreateModal)
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+                <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all">
+                    
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center pb-4 border-b border-[#3d2b1f]/10">
+                        <h2 class="text-sm font-black uppercase tracking-wider text-[#3d2b1f]">
+                            {{ isset($prospectoId) && $prospectoId ? 'Editar Prospecto' : 'Agregar Nuevo Prospecto' }}
+                        </h2>
+                        <button wire:click="closeCreateModal" class="text-[#3d2b1f]/60 hover:text-[#3d2b1f] text-xl font-black w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Modal Body Form -->
+                    <form wire:submit.prevent="save" class="space-y-4 text-xs">
+                        <!-- Empresa y Ubicación -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Empresa *</label>
+                                <input type="text" wire:model="empresa" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                @error('empresa') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Ubicación Local</label>
+                                <input type="text" wire:model="ubicacion_local" placeholder="Ej: Querétaro, Qro" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                @error('ubicacion_local') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Director -->
+                        <div class="space-y-1">
+                            <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Contacto Principal</label>
+                            <input type="text" wire:model="director_nombre" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                            @error('director_nombre') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Contacto Directo -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Teléfono / WhatsApp</label>
+                                <input type="text" wire:model="telefono_whatsapp" placeholder="Ej: +521234567890" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                @error('telefono_whatsapp') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Correo Corporativo</label>
+                                <input type="email" wire:model="correo_corporativo" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                @error('correo_corporativo') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Estado y Prioridad -->
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Estado de Embudo</label>
+                                <select wire:model="estado_contacto" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                    <option value="pendiente">🔵 Pendiente</option>
+                                    <option value="enviado">🟡 Contactado</option>
+                                    <option value="respondido">🟢 En Conversación</option>
+                                    <option value="descartado">🔴 Descartado</option>
+                                </select>
+                                @error('estado_contacto') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="space-y-1 col-span-2 sm:col-span-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Prioridad Táctica</label>
+                                <select wire:model="priority" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                    <option value="alfa">🔴 Alfa (Alta)</option>
+                                    <option value="bravo">🟡 Bravo (Media)</option>
+                                    <option value="charlie">⚪ Charlie (Baja)</option>
+                                </select>
+                                @error('priority') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end gap-3 pt-6">
+                            <button type="button" wire:click="closeCreateModal" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                                {{ isset($prospectoId) && $prospectoId ? 'Actualizar' : 'Guardar' }} Prospecto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
         
     </div>
 </div>
