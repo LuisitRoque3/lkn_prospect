@@ -142,12 +142,11 @@
 
                             <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
-                                <a href="{{ $prospecto->whatsapp_url }}" 
-                                   target="_blank" 
-                                   class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all group/wa">
+                                <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
+                                        class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all group/wa">
                                     <span class="text-base group-hover/wa:scale-110 transition-transform">💬</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">WhatsApp</span>
-                                </a>
+                                </button>
                             @else
                                 <div class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
                                     <span class="text-base opacity-50">💬</span>
@@ -249,12 +248,11 @@
 
                                     <!-- WhatsApp Button -->
                                     @if($prospecto->telefono_whatsapp)
-                                        <a href="{{ $prospecto->whatsapp_url }}" 
-                                           target="_blank" 
-                                           title="Enviar WhatsApp"
-                                           class="inline-flex items-center justify-center w-8 h-8 bg-[#25D366]/10 hover:bg-[#25D366] hover:text-white border border-[#25D366]/20 text-[#075E54] rounded-lg transition-all shadow-sm transform hover:scale-110">
+                                        <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
+                                                title="Enviar WhatsApp"
+                                                class="inline-flex items-center justify-center w-8 h-8 bg-[#25D366]/10 hover:bg-[#25D366] hover:text-white border border-[#25D366]/20 text-[#075E54] rounded-lg transition-all shadow-sm transform hover:scale-110">
                                             💬
-                                        </a>
+                                        </button>
                                     @else
                                         <div class="inline-flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-100 text-gray-300 rounded-lg cursor-not-allowed" title="Sin Teléfono">💬</div>
                                     @endif
@@ -396,6 +394,126 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        @endif
+
+        <!-- MODAL DE PLANTILLAS DE WHATSAPP -->
+        @if($showWhatsappModal && $selectedProspectForWhatsapp)
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+                <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all">
+                    
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center pb-4 border-b border-[#3d2b1f]/10">
+                        <div class="space-y-1">
+                            <h2 class="text-sm font-black uppercase tracking-wider text-[#3d2b1f]">
+                                Preparar WhatsApp
+                            </h2>
+                            <p class="text-[10px] text-[#3d2b1f]/60 font-bold uppercase">
+                                Para: {{ $selectedProspectForWhatsapp->empresa }} ({{ $selectedProspectForWhatsapp->telefono_whatsapp }})
+                            </p>
+                        </div>
+                        <button wire:click="closeWhatsappModal" class="text-[#3d2b1f]/60 hover:text-[#3d2b1f] text-xl font-black w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="space-y-4 text-xs">
+                        @if($showTemplateManager)
+                            <!-- GESTOR DE PLANTILLAS (CRUD) -->
+                            <div class="space-y-4 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
+                                <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                                    <h3 class="font-black uppercase text-[10px] text-[#3d2b1f]">
+                                        {{ $tempTemplateId ? 'Editar Plantilla' : 'Nueva Plantilla (Hasta 10)' }}
+                                    </h3>
+                                    <button type="button" wire:click="cancelTemplateEdit" class="text-xs font-bold text-[#a3583d] hover:underline">
+                                        Volver a la selección
+                                    </button>
+                                </div>
+
+                                @if (session()->has('template_error'))
+                                    <div class="p-2.5 bg-red-50 border border-red-200 text-red-800 text-[10px] rounded-lg">
+                                        {{ session('template_error') }}
+                                    </div>
+                                @endif
+
+                                <!-- Formulario de Edición/Creación -->
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block font-black uppercase text-[9px] text-[#3d2b1f]/70 mb-1">Título de la Plantilla</label>
+                                        <input type="text" wire:model="tempTemplateTitulo" placeholder="Ej: Contacto Inicial" class="w-full px-3 py-2 bg-white border border-[#3d2b1f]/10 rounded-lg text-xs text-[#3d2b1f] focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d]">
+                                        @error('tempTemplateTitulo') <span class="text-red-500 text-[9px]">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block font-black uppercase text-[9px] text-[#3d2b1f]/70 mb-1">Mensaje</label>
+                                        <textarea wire:model="tempTemplateMensaje" rows="3" placeholder="Hola {empresa}, nos gustaría..." class="w-full px-3 py-2 bg-white border border-[#3d2b1f]/10 rounded-lg text-xs text-[#3d2b1f] focus:outline-none focus:ring-1 focus:ring-[#a3583d] focus:border-[#a3583d] resize-none"></textarea>
+                                        <p class="text-[9px] text-gray-500 mt-1">Puedes usar <strong class="text-[#a3583d]">{empresa}</strong> y <strong class="text-[#a3583d]">{ubicacion}</strong> para reemplazo dinámico.</p>
+                                        @error('tempTemplateMensaje') <span class="text-red-500 text-[9px]">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" wire:click="cancelTemplateEdit" class="px-3 py-1.5 bg-gray-200 text-gray-700 text-[9px] font-black uppercase tracking-wider rounded-lg">Cancelar</button>
+                                        <button type="button" wire:click="saveTemplate" class="px-3 py-1.5 bg-[#a3583d] text-white text-[9px] font-black uppercase tracking-wider rounded-lg">Guardar</button>
+                                    </div>
+                                </div>
+
+                                <!-- Listado para Editar/Eliminar -->
+                                <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                                    <h4 class="font-black uppercase text-[9px] text-[#3d2b1f]/70">Lista de Plantillas Existentes</h4>
+                                    <div class="max-h-36 overflow-y-auto space-y-2 pr-1">
+                                        @foreach($this->getTemplates() as $pl)
+                                            <div class="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-lg text-[10px]">
+                                                <span class="font-bold text-[#3d2b1f] truncate max-w-[200px]" title="{{ $pl->titulo }}">{{ $pl->titulo }}</span>
+                                                <div class="flex gap-2">
+                                                    <button type="button" wire:click="editTemplate({{ $pl->id }})" class="text-blue-600 hover:underline">Editar</button>
+                                                    <button type="button" wire:click="deleteTemplate({{ $pl->id }})" onclick="confirm('¿Estás seguro de eliminar esta plantilla?') || event.stopImmediatePropagation()" class="text-red-600 hover:underline">Eliminar</button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <!-- SELECTOR Y PREVISUALIZACIÓN -->
+                            <div class="flex justify-between items-center">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Seleccionar Plantilla de Mensaje</label>
+                                <button type="button" wire:click="$set('showTemplateManager', true)" class="text-[9px] font-black uppercase tracking-wider text-[#a3583d] hover:underline flex items-center gap-1">
+                                    ⚙️ Gestionar Catálogo
+                                </button>
+                            </div>
+
+                            <div class="space-y-1">
+                                <select wire:model.live="selectedTemplate" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                    <option value="">-- Sin plantilla / Mensaje vacío --</option>
+                                    @foreach($this->getTemplates() as $pl)
+                                        <option value="{{ $pl->id }}">{{ $pl->titulo }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Editor del Mensaje -->
+                            <div class="space-y-1">
+                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Editar Mensaje (Personalizar si es necesario)</label>
+                                <textarea wire:model="whatsappMessage" rows="5" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-semibold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all resize-none"></textarea>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="flex justify-end gap-3 pt-4 border-t border-[#3d2b1f]/10">
+                                <button type="button" wire:click="closeWhatsappModal" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                    Cancelar
+                                </button>
+                                
+                                <!-- Botón Enviar (Abre WhatsApp en nueva pestaña y marca como enviado) -->
+                                <a href="https://wa.me/{{ $selectedProspectForWhatsapp->clean_phone }}?text={{ urlencode($whatsappMessage) }}" 
+                                   target="_blank"
+                                   wire:click="markWhatsappAsSent"
+                                   class="inline-flex items-center px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                                    💬 Disparar WhatsApp
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+
                 </div>
             </div>
         @endif
