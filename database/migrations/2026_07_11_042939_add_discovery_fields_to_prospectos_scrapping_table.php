@@ -17,10 +17,6 @@ return new class extends Migration
             $table->text('puestos_buscados')->nullable()->after('vacantes_activas');
             $table->string('tamano_empresa')->nullable()->after('puestos_buscados');
             $table->text('origen_detalles')->nullable()->after('tamano_empresa');
-            $table->string('giro_negocio')->nullable()->after('empresa');
-            $table->string('tamano_estimado')->nullable()->after('giro_negocio');
-            $table->text('ubicacion_local')->nullable()->after('telefono_whatsapp');
-            $table->string('url_origen')->nullable()->after('ubicacion_local');
         });
     }
 
@@ -35,11 +31,7 @@ return new class extends Migration
                 'vacantes_activas',
                 'puestos_buscados',
                 'tamano_empresa',
-                'origen_detalles',
-                'giro_negocio',
-                'tamano_estimado',
-                'ubicacion_local',
-                'url_origen'
+                'origen_detalles'
             ]);
         });
     }
