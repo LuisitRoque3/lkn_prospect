@@ -31,35 +31,69 @@
         @endif
 
         <!-- FILTROS Y BUSCADOR -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="relative md:col-span-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+            <div class="relative md:col-span-2 sm:col-span-2">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <span class="text-[#3d2b1f]/40">🔍</span>
                 </div>
                 <input type="text" 
                        wire:model.live="search" 
-                       placeholder="Buscar por empresa, director o ubicación..." 
+                       placeholder="Buscar por empresa, director, ubicación o puesto..." 
                        class="w-full pl-10 pr-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] placeholder-[#3d2b1f]/40 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
             </div>
-            <div class="md:col-span-1">
+            <div class="col-span-1">
                 <select wire:model.live="statusFilter" 
                         class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
-                    <option value="">Todos los Estados</option>
+                    <option value="">Estados</option>
                     <option value="pendiente">Pendiente</option>
                     <option value="enviado">Contactado</option>
                     <option value="respondido">En Conversación</option>
                     <option value="descartado">Descartado</option>
                 </select>
             </div>
-            <div class="md:col-span-1">
+            <div class="col-span-1">
                 <select wire:model.live="priorityFilter" 
                         class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
-                    <option value="">Prioridad</option>
+                    <option value="">Prioridades</option>
                     <option value="alfa">Alfa (Alta)</option>
                     <option value="bravo">Bravo (Med)</option>
                     <option value="charlie">Charlie (Baja)</option>
                 </select>
             </div>
+            <div class="col-span-1">
+                <select wire:model.live="fuenteFilter" 
+                        class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                    <option value="">Fuentes</option>
+                    <option value="maps">Google Maps</option>
+                    <option value="empleo">Bolsa Empleo</option>
+                    <option value="denue">DENUE INEGI</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <select wire:model.live="giroFilter" 
+                        class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                    <option value="">Giros</option>
+                    @foreach($girosDisponibles as $giroDisp)
+                        <option value="{{ $giroDisp }}">{{ ucwords($giroDisp) }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-white border border-[#3d2b1f]/5 px-4 py-3 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/80">
+            <span>Filtro de Contratación:</span>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="vacantesFilter" value="" wire:model.live="vacantesFilter" class="text-[#a3583d] focus:ring-[#a3583d]/20">
+                <span>Todos</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="vacantesFilter" value="1" wire:model.live="vacantesFilter" class="text-[#a3583d] focus:ring-[#a3583d]/20">
+                <span class="text-emerald-700">Contratando (Solventes)</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="vacantesFilter" value="0" wire:model.live="vacantesFilter" class="text-[#a3583d] focus:ring-[#a3583d]/20">
+                <span>Sin vacantes</span>
+            </label>
         </div>
 
         <!-- MÓVIL: VISTA EN TARJETAS (CARDS) -->
@@ -79,6 +113,21 @@
                                 {{ $prospecto->empresa }}
                             </h3>
                             <p class="text-[10px] text-[#3d2b1f]/50 mt-1 uppercase tracking-wider font-semibold">📍 {{ $prospecto->ubicacion_local ?: 'Sin ubicación' }}</p>
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                @if($prospecto->giro_negocio)
+                                    <span class="inline-block px-2 py-0.5 bg-amber-50 text-amber-800 text-[8px] font-black uppercase tracking-wider rounded-md border border-amber-100">
+                                        {{ $prospecto->giro_negocio }}
+                                    </span>
+                                @endif
+                                <span class="inline-block px-2 py-0.5 bg-gray-50 text-gray-700 text-[8px] font-black uppercase tracking-wider rounded-md border border-gray-200">
+                                    {{ strtoupper($prospecto->fuente_descubrimiento ?: 'maps') }}
+                                </span>
+                                @if($prospecto->vacantes_activas)
+                                    <span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[8px] font-black uppercase tracking-wider rounded-md border border-emerald-100 animate-pulse">
+                                        🔥 Contratando
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                         <div class="flex flex-col items-end gap-1">
                             <span class="shrink-0 inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider
@@ -204,6 +253,21 @@
                                         <p class="text-[10px] text-[#3d2b1f]/50 font-bold uppercase mt-0.5 tracking-wider truncate max-w-[200px]" title="{{ $prospecto->ubicacion_local }}">
                                             📍 {{ $prospecto->ubicacion_local ?: 'Ubicación Desconocida' }}
                                         </p>
+                                        <div class="flex flex-wrap gap-1 mt-1.5">
+                                            @if($prospecto->giro_negocio)
+                                                <span class="inline-block px-1.5 py-0.5 bg-amber-50 text-amber-800 text-[8px] font-black uppercase tracking-wider rounded border border-amber-100">
+                                                    {{ $prospecto->giro_negocio }}
+                                                </span>
+                                            @endif
+                                            <span class="inline-block px-1.5 py-0.5 bg-gray-50 text-gray-700 text-[8px] font-black uppercase tracking-wider rounded border border-gray-200">
+                                                {{ strtoupper($prospecto->fuente_descubrimiento ?: 'maps') }}
+                                            </span>
+                                            @if($prospecto->vacantes_activas)
+                                                <span class="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[8px] font-black uppercase tracking-wider rounded border border-emerald-100 animate-pulse" title="Buscando personal: {{ $prospecto->puestos_buscados }}">
+                                                    🔥 Contratando
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </td>

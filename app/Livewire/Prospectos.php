@@ -15,6 +15,9 @@ class Prospectos extends Component
     public $search = '';
     public $statusFilter = '';
     public $priorityFilter = '';
+    public $fuenteFilter = '';
+    public $giroFilter = '';
+    public $vacantesFilter = '';
 
     // Create/Edit Modal Properties
     public $showCreateModal = false;
@@ -60,6 +63,21 @@ class Prospectos extends Component
     }
 
     public function updatingPriorityFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFuenteFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingGiroFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingVacantesFilter()
     {
         $this->resetPage();
     }
@@ -385,8 +403,34 @@ class Prospectos extends Component
             $query->where('priority', $this->priorityFilter);
         }
 
+        if ($this->fuenteFilter) {
+            $query->where('fuente_descubrimiento', $this->fuenteFilter);
+        }
+
+        if ($this->giroFilter) {
+            $query->where('giro_negocio', $this->giroFilter);
+        }
+
+        if ($this->vacantesFilter !== '') {
+            $query->where('vacantes_activas', $this->vacantesFilter);
+        }
+
+        // Obtener giros únicos disponibles en la BD para el buscador/filtro dinámico
+        $girosDisponibles = [];
+        try {
+            $girosDisponibles = \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
+                ->whereNotNull('giro_negocio')
+                ->where('giro_negocio', '!=', '')
+                ->distinct()
+                ->pluck('giro_negocio')
+                ->toArray();
+        } catch (\Exception $e) {
+            // Fallback si falla
+        }
+
         return view('livewire.prospectos', [
-            'prospectos' => $query->orderBy('creado_at', 'desc')->paginate(15)
+            'prospectos' => $query->orderBy('creado_at', 'desc')->paginate(15),
+            'girosDisponibles' => $girosDisponibles
         ]);
     }
 }
