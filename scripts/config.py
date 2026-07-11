@@ -11,7 +11,7 @@ DB_CONFIG = {
 # Llaves de API
 GOOGLE_PLACES_API_KEY = 'AIzaSyBfm6IRK4y3sSEIzDN5Me-S67W2JCvyw0Y'
 JOOBLE_API_KEY = '' # El usuario la puede rellenar o usar fallback sin API de pago
-DENUE_API_TOKEN = '76df3821-4f9b-42fa-97ab-4fbe9e30a57e' # Token demo o del usuario si tiene
+DENUE_API_TOKEN = '644cb744-9d96-47bb-a8ab-1dceddd73850' # Token privado del usuario
 
 # Catálogo de Giros a Mapear
 GIROS = [

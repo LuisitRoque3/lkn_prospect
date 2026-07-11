@@ -10,55 +10,50 @@ from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, CIUDADES, GIROS
 
 def buscar_vacantes_web(giro, ciudad):
     """
-    Busca vacantes activas en portales de empleo de forma pública (Scraping de bajo costo/free).
+    Busca vacantes activas en Computrabajo México de forma pública.
     Retorna una lista de diccionarios con {'empresa': ..., 'puesto': ..., 'ciudad': ...}
     """
-    print(f"\n[EMPLEOS] Buscando vacantes de '{giro}' en '{ciudad}'...")
+    import urllib.parse
+    print(f"\n[EMPLEOS] Buscando vacantes de '{giro}' en '{ciudad}' vía Computrabajo...")
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
     }
     
     # Mapeo de giros a palabras clave de vacantes
     puesto_busqueda = giro
     if "logística" in giro:
-        puesto_busqueda = "chofer OR logistica OR almacenista"
+        puesto_busqueda = "logistica"
     elif "eléctricas" in giro:
-        puesto_busqueda = "electricista OR instalaciones"
+        puesto_busqueda = "electricista"
     elif "mecánicos" in giro:
-        puesto_busqueda = "mecanico OR ayudante general"
+        puesto_busqueda = "mecanico"
     elif "seguridad" in giro:
-        puesto_busqueda = "guardia de seguridad OR oficial de seguridad"
+        puesto_busqueda = "guardia de seguridad"
         
-    url = f"https://mx.jooble.org/SearchResult?ukw={puesto_busqueda}&rgns={ciudad}"
+    puesto_encoded = urllib.parse.quote(puesto_busqueda)
+    ciudad_encoded = urllib.parse.quote(ciudad)
+    
+    # URL de búsqueda de Computrabajo México
+    url = f"https://mx.computrabajo.com/trabajo-de-{puesto_encoded}?q={puesto_encoded}&l={ciudad_encoded}"
     
     companias_hiring = []
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            # Las tarjetas de empleo en Jooble suelen tener clases de artículo
-            job_cards = soup.find_all('article')
+            # En Computrabajo, las ofertas están en elementos de clase 'box_offer' o artículos
+            job_cards = soup.select('article.box_offer') or soup.find_all('article')
             
-            for card in job_cards[:10]: # Limitar a las primeras 10 para cuidar la carga
+            for card in job_cards[:15]: # Procesar primeros 15 resultados
                 try:
-                    # Buscar nombre de la empresa
-                    company_elem = card.find('span', {'class': lambda x: x and 'company' in x.lower()}) or card.find('div', {'class': lambda x: x and 'company' in x.lower()})
-                    if not company_elem:
-                        # Fallback a clases comunes
-                        company_elem = card.select_one('[data-company]')
-                        
-                    company_name = company_elem.text.strip() if company_elem else ""
-                    
-                    # Si no encuentra por clase, buscar en texto
-                    if not company_name:
-                        for span in card.find_all(['span', 'p', 'div']):
-                            if span.get('class') and any('company' in c for c in span.get('class')):
-                                company_name = span.text.strip()
-                                break
-                                
                     # Buscar el título del puesto
-                    title_elem = card.find('h2') or card.find('a', {'href': True})
+                    title_elem = card.find('h2') or card.select_one('a.js-o-link') or card.find('a')
                     job_title = title_elem.text.strip() if title_elem else "Vacante"
+                    
+                    # Buscar el nombre de la empresa
+                    # Computrabajo usualmente usa clase fc_base para los nombres de empresas
+                    company_elem = card.select_one('a.fc_base') or card.select_one('.fc_base') or card.select_one('[itemprop="name"]')
+                    company_name = company_elem.text.strip() if company_elem else ""
                     
                     # Filtros críticos: Evitar "Confidencial", "Anonima" o vacíos
                     if company_name and len(company_name) > 2 and not any(x in company_name.lower() for x in ["confidencial", "anonimo", "empresa líder", "importante empresa"]):
@@ -70,9 +65,9 @@ def buscar_vacantes_web(giro, ciudad):
                 except Exception as card_err:
                     continue
     except Exception as e:
-        print(f"[-] Error al consultar portal de empleo: {e}")
+        print(f"[-] Error al consultar Computrabajo: {e}")
         
-    print(f"[EMPLEOS] Se encontraron {len(companias_hiring)} ofertas de empleo viables con nombres de empresas.")
+    print(f"[EMPLEOS] Se encontraron {len(companias_hiring)} ofertas de empleo viables en Computrabajo con nombres de empresas.")
     return companias_hiring
 
 def motor_empleos_y_enriquecimiento(giro, ciudad):
