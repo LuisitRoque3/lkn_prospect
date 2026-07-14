@@ -122,12 +122,15 @@ new class extends Component
             <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
                 Giro del Negocio
             </label>
-            <select wire:model="giro" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                <option value="">Selecciona un giro...</option>
+            <input wire:model="giro" 
+                   list="giros-list" 
+                   placeholder="Escribe o selecciona giro..." 
+                   class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+            <datalist id="giros-list">
                 @foreach($listaGiros as $g)
-                    <option value="{{ $g }}">{{ ucwords($g) }}</option>
+                    <option value="{{ ucwords($g) }}">
                 @endforeach
-            </select>
+            </datalist>
             @error('giro') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
         </div>
 
@@ -135,12 +138,15 @@ new class extends Component
             <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
                 Ciudad / Ubicación
             </label>
-            <select wire:model="ciudad" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                <option value="">Selecciona una ciudad...</option>
+            <input wire:model="ciudad" 
+                   list="ciudades-list" 
+                   placeholder="Escribe o selecciona ciudad..." 
+                   class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+            <datalist id="ciudades-list">
                 @foreach($listaCiudades as $c)
-                    <option value="{{ $c }}">{{ $c }}</option>
+                    <option value="{{ $c }}">
                 @endforeach
-            </select>
+            </datalist>
             @error('ciudad') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
         </div>
 
