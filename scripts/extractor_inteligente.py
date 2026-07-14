@@ -74,15 +74,15 @@ def persistir_leads(leads):
         query = """INSERT IGNORE INTO prospectos_scrapping 
                    (empresa, giro_negocio, director_nombre, correo_corporativo, telefono_whatsapp, 
                     tamano_estimado, ubicacion_local, url_origen, fuente_descubrimiento, 
-                    vacantes_activas, puestos_buscados, tamano_empresa, origen_detalles)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                    vacantes_activas, puestos_buscados, tamano_empresa, origen_detalles, user_id)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         
         valores = [
             (
                 l['empresa'], l['giro_negocio'], l['director_nombre'], l['correo_corporativo'], 
                 l['telefono_whatsapp'], l['tamano_estimado'], l['ubicacion_local'], l['url_origen'],
                 l['fuente_descubrimiento'], l['vacantes_activas'], l['puestos_buscados'], 
-                l['tamano_empresa'], l['origen_detalles']
+                l['tamano_empresa'], l['origen_detalles'], l.get('user_id')
             ) 
             for l in leads
         ]

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use App\Mail\ColdOutreachMail;
 
 class Prospectos extends Component
@@ -313,7 +314,7 @@ class Prospectos extends Component
         $this->validate();
 
         if ($this->prospectoId) {
-            $prospecto = Prospecto::findOrFail($this->prospectoId);
+            $prospecto = Prospecto::where('user_id', Auth::id())->findOrFail($this->prospectoId);
             $prospecto->update([
                 'empresa' => $this->empresa,
                 'ubicacion_local' => $this->ubicacion_local,
@@ -336,6 +337,7 @@ class Prospectos extends Component
                 'estado_contacto' => $this->estado_contacto,
                 'priority' => $this->priority,
                 'tracking_uuid' => $uuid,
+                'user_id' => Auth::id(), // Guardar el user_id del usuario logueado
             ]);
             session()->flash('message', 'Prospecto creado exitosamente.');
         }
@@ -346,7 +348,7 @@ class Prospectos extends Component
 
     public function updateStatus($id, $status)
     {
-        $prospecto = Prospecto::find($id);
+        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
         if ($prospecto) {
             $prospecto->estado_contacto = $status;
             $prospecto->save();
@@ -355,7 +357,7 @@ class Prospectos extends Component
 
     public function updatePriority($id, $priority)
     {
-        $prospecto = Prospecto::find($id);
+        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
         if ($prospecto) {
             $prospecto->priority = $priority;
             $prospecto->save();
@@ -364,7 +366,7 @@ class Prospectos extends Component
 
     public function sendColdEmail($id)
     {
-        $prospecto = Prospecto::find($id);
+        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
         if ($prospecto && $prospecto->correo_corporativo) {
             // Generar UUID si es un prospecto viejo que no lo tiene
             if (!$prospecto->tracking_uuid) {
@@ -387,6 +389,12 @@ class Prospectos extends Component
     public function render()
     {
         $query = Prospecto::query();
+
+        // Filtrar leads: Solo los del usuario autenticado (o huérfanos/legacy de soporte)
+        $query->where(function($q) {
+            $q->where('user_id', Auth::id())
+              ->orWhereNull('user_id');
+        });
 
         if ($this->search) {
             $query->where(function($q) {
@@ -419,6 +427,10 @@ class Prospectos extends Component
         $girosDisponibles = [];
         try {
             $girosDisponibles = \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
+                ->where(function($q) {
+                    $q->where('user_id', Auth::id())
+                      ->orWhereNull('user_id');
+                })
                 ->whereNotNull('giro_negocio')
                 ->where('giro_negocio', '!=', '')
                 ->distinct()
