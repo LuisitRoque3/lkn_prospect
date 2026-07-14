@@ -96,6 +96,14 @@
             </label>
         </div>
 
+        <!-- MÓVIL: CONTROLES DE ORDENAMIENTO -->
+        <div class="flex md:hidden justify-between items-center bg-white border border-[#3d2b1f]/10 p-3 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/70">
+            <span>Ordenar por Fecha:</span>
+            <button wire:click="sortBy('creado_at')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-[10px] font-black uppercase tracking-wider text-[#a3583d] hover:bg-amber-50">
+                <span>{{ $sortDirection === 'asc' ? 'Más Antiguos ▲' : 'Más Recientes ▼' }}</span>
+            </button>
+        </div>
+
         <!-- MÓVIL: VISTA EN TARJETAS (CARDS) -->
         <div class="block md:hidden space-y-4">
             @forelse($prospectos as $prospecto)
@@ -113,6 +121,7 @@
                                 {{ $prospecto->empresa }}
                             </h3>
                             <p class="text-[10px] text-[#3d2b1f]/50 mt-1 uppercase tracking-wider font-semibold">📍 {{ $prospecto->ubicacion_local ?: 'Sin ubicación' }}</p>
+                            <p class="text-[9px] text-[#3d2b1f]/40 font-bold uppercase mt-1">📅 {{ $prospecto->creado_at ? \Carbon\Carbon::parse($prospecto->creado_at)->translatedFormat('d M Y, h:i A') : 'N/A' }}</p>
                             <div class="flex flex-wrap gap-1 mt-2">
                                 @if($prospecto->giro_negocio)
                                     <span class="inline-block px-2 py-0.5 bg-amber-50 text-amber-800 text-[8px] font-black uppercase tracking-wider rounded-md border border-amber-100">
@@ -233,6 +242,9 @@
                     <tr class="border-b border-[#3d2b1f]/10 bg-[#f4e8d8]/30">
                         <th class="p-5 font-black uppercase text-[#a3583d] tracking-wider">Empresa & Ubicación</th>
                         <th class="p-5 font-black uppercase text-[#3d2b1f]/70 tracking-wider">Contacto Principal</th>
+                        <th class="p-5 font-black uppercase text-[#3d2b1f]/70 tracking-wider cursor-pointer select-none whitespace-nowrap" wire:click="sortBy('creado_at')">
+                            Fecha de Ingreso {!! $sortField === 'creado_at' ? ($sortDirection === 'asc' ? '▲' : '▼') : '' !!}
+                        </th>
                         <th class="p-5 font-black uppercase text-[#3d2b1f]/70 tracking-wider text-center">Acciones Directas</th>
                         <th class="p-5 font-black uppercase text-[#3d2b1f]/70 tracking-wider text-center">Estado de Embudo</th>
                     </tr>
@@ -287,6 +299,11 @@
                                         </span>
                                     @endif
                                 </div>
+                            </td>
+
+                            <!-- Columna 2.5: Fecha de Ingreso -->
+                            <td class="p-5 whitespace-nowrap text-gray-500 font-medium">
+                                {{ $prospecto->creado_at ? \Carbon\Carbon::parse($prospecto->creado_at)->translatedFormat('d M Y, h:i A') : 'N/A' }}
                             </td>
 
                             <!-- Columna 3: Omnicanal y Edición -->

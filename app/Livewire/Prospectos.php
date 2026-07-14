@@ -19,6 +19,8 @@ class Prospectos extends Component
     public $fuenteFilter = '';
     public $giroFilter = '';
     public $vacantesFilter = '';
+    public $sortField = 'creado_at';
+    public $sortDirection = 'desc';
 
     // Create/Edit Modal Properties
     public $showCreateModal = false;
@@ -81,6 +83,16 @@ class Prospectos extends Component
     public function updatingVacantesFilter()
     {
         $this->resetPage();
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'desc';
+        }
     }
 
     public function openCreateModal()
@@ -441,7 +453,7 @@ class Prospectos extends Component
         }
 
         return view('livewire.prospectos', [
-            'prospectos' => $query->orderBy('creado_at', 'desc')->paginate(15),
+            'prospectos' => $query->orderBy($this->sortField, $this->sortDirection)->paginate(15),
             'girosDisponibles' => $girosDisponibles
         ]);
     }
