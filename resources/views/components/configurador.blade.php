@@ -294,8 +294,8 @@ new class extends Component
                             $girosArr = json_decode($c->giro, true);
                             $ciudadesArr = json_decode($c->ciudad, true);
                             
-                            $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro);
-                            $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : $c->ciudad;
+                            $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro ?? '');
+                            $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : ($c->ciudad ?? '');
                             
                             $girosCount = is_array($girosArr) ? count($girosArr) : 1;
                             $ciudadesCount = is_array($ciudadesArr) ? count($ciudadesArr) : 1;
@@ -347,8 +347,8 @@ new class extends Component
                                     $girosArr = json_decode($c->giro, true);
                                     $ciudadesArr = json_decode($c->ciudad, true);
                                     
-                                    $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro);
-                                    $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : $c->ciudad;
+                                    $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro ?? '');
+                                    $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : ($c->ciudad ?? '');
                                     
                                     $girosCount = is_array($girosArr) ? count($girosArr) : 1;
                                     $ciudadesCount = is_array($ciudadesArr) ? count($ciudadesArr) : 1;
