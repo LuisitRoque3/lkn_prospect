@@ -11,6 +11,12 @@ new class extends Component
     public $selectedCiudades = [];
     public $selected_org_id = '';
     
+    // Inputs para agregar nuevos elementos al vuelo
+    public $nuevoGiro = '';
+    public $nuevaCiudad = '';
+    public $customGiros = [];
+    public $customCiudades = [];
+
     // Pestaña Interna activa: 'extractor', 'organizaciones', 'usuarios'
     public $currentSection = 'extractor';
 
@@ -21,7 +27,7 @@ new class extends Component
     public $userToAssign = '';
     public $orgToAssign = '';
 
-    // Catálogo para seleccionar
+    // Catálogo Base estático
     public $listaCiudades = [
         "CDMX", "Monterrey", "Guadalajara", "Puebla", "Tijuana", 
         "Leon", "Querétaro", "Toluca", "San Luis Potosí", "Mérida", 
@@ -51,15 +57,93 @@ new class extends Component
         $this->resetErrorBag();
     }
 
+    // Listas dinámicas combinando el catálogo base + elementos de tareas guardadas + elementos agregados al vuelo
+    public function getGirosList()
+    {
+        $giros = $this->listaGiros;
+        
+        try {
+            $configs = DB::table('configuraciones_extraccion')->pluck('giro');
+            foreach ($configs as $config) {
+                $decoded = json_decode($config, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $g) {
+                        $giros[] = strtolower($g);
+                    }
+                } else if ($config) {
+                    $giros[] = strtolower($config);
+                }
+            }
+        } catch (\Exception $e) {}
+
+        $giros = array_merge($giros, $this->customGiros);
+        return array_values(array_unique(array_map('trim', $giros)));
+    }
+
+    public function getCiudadesList()
+    {
+        $ciudades = $this->listaCiudades;
+        
+        try {
+            $configs = DB::table('configuraciones_extraccion')->pluck('ciudad');
+            foreach ($configs as $config) {
+                $decoded = json_decode($config, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $c) {
+                        $ciudades[] = $c;
+                    }
+                } else if ($config) {
+                    $ciudades[] = $config;
+                }
+            }
+        } catch (\Exception $e) {}
+
+        $ciudades = array_merge($ciudades, $this->customCiudades);
+        return array_values(array_unique(array_map('trim', $ciudades)));
+    }
+
+    // Acciones de agregar al vuelo
+    public function agregarGiroPersonalizado()
+    {
+        $giroClean = strtolower(trim($this->nuevoGiro));
+        if (empty($giroClean)) return;
+        
+        if (!in_array($giroClean, $this->getGirosList())) {
+            $this->customGiros[] = $giroClean;
+        }
+        
+        if (!in_array($giroClean, $this->selectedGiros)) {
+            $this->selectedGiros[] = $giroClean;
+        }
+        
+        $this->nuevoGiro = '';
+    }
+
+    public function agregarCiudadPersonalizada()
+    {
+        $ciudadClean = trim($this->nuevaCiudad);
+        if (empty($ciudadClean)) return;
+        
+        if (!in_array($ciudadClean, $this->getCiudadesList())) {
+            $this->customCiudades[] = $ciudadClean;
+        }
+        
+        if (!in_array($ciudadClean, $this->selectedCiudades)) {
+            $this->selectedCiudades[] = $ciudadClean;
+        }
+        
+        $this->nuevaCiudad = '';
+    }
+
     // Acciones de Marcación Rápida
     public function seleccionarTodosGiros()
     {
-        $this->selectedGiros = $this->listaGiros;
+        $this->selectedGiros = $this->getGirosList();
     }
 
     public function seleccionarTodasCiudades()
     {
-        $this->selectedCiudades = $this->listaCiudades;
+        $this->selectedCiudades = $this->getCiudadesList();
     }
 
     // ==========================================
@@ -85,7 +169,7 @@ new class extends Component
             'updated_at' => now()
         ]);
 
-        $this->reset(['selectedGiros', 'selectedCiudades', 'selected_org_id']);
+        $this->reset(['selectedGiros', 'selectedCiudades', 'selected_org_id', 'customGiros', 'customCiudades']);
         session()->flash('message', 'Tarea programada asignada con éxito a la organización.');
     }
 
@@ -224,35 +308,51 @@ new class extends Component
             <form wire:submit="agregar" class="space-y-4 bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Checkbox de Giros -->
-                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-56 overflow-y-auto">
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">1. Seleccionar Giros</span>
-                            <button type="button" wire:click="seleccionarTodosGiros" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todos</button>
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-60 overflow-y-auto flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center pb-2 border-b border-gray-100 mb-2">
+                                <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">1. Seleccionar Giros</span>
+                                <button type="button" wire:click="seleccionarTodosGiros" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todos</button>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto pr-1">
+                                @foreach($this->getGirosList() as $g)
+                                    <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                        <input type="checkbox" value="{{ $g }}" wire:model="selectedGiros" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
+                                        <span class="capitalize text-[#3d2b1f]/85">{{ $g }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 gap-2 pt-1">
-                            @foreach($listaGiros as $g)
-                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
-                                    <input type="checkbox" value="{{ $g }}" wire:model="selectedGiros" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
-                                    <span class="capitalize text-[#3d2b1f]/85">{{ $g }}</span>
-                                </label>
-                            @endforeach
+                        
+                        <!-- Input para agregar nuevo giro personalizado -->
+                        <div class="flex gap-2 pt-2 border-t border-gray-100 mt-2">
+                            <input type="text" wire:model="nuevoGiro" placeholder="Escribe otro giro..." class="flex-1 px-2.5 py-1.5 border border-[#3d2b1f]/10 rounded-lg text-xs" wire:keydown.enter.prevent="agregarGiroPersonalizado">
+                            <button type="button" wire:click="agregarGiroPersonalizado" class="px-3 py-1.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-bold rounded-lg transition-all active:scale-95">+</button>
                         </div>
                         @error('selectedGiros') <span class="text-[10px] text-red-600 font-bold block pt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Checkbox de Ciudades -->
-                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-56 overflow-y-auto">
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">2. Seleccionar Ciudades</span>
-                            <button type="button" wire:click="seleccionarTodasCiudades" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todas</button>
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-60 overflow-y-auto flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center pb-2 border-b border-gray-100 mb-2">
+                                <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">2. Seleccionar Ciudades</span>
+                                <button type="button" wire:click="seleccionarTodasCiudades" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todas</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                                @foreach($this->getCiudadesList() as $c)
+                                    <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                        <input type="checkbox" value="{{ $c }}" wire:model="selectedCiudades" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
+                                        <span class="text-[#3d2b1f]/85">{{ $c }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            @foreach($listaCiudades as $c)
-                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
-                                    <input type="checkbox" value="{{ $c }}" wire:model="selectedCiudades" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
-                                    <span class="text-[#3d2b1f]/85">{{ $c }}</span>
-                                </label>
-                            @endforeach
+                        
+                        <!-- Input para agregar nueva ciudad personalizada -->
+                        <div class="flex gap-2 pt-2 border-t border-gray-100 mt-2">
+                            <input type="text" wire:model="nuevaCiudad" placeholder="Escribe otra ciudad..." class="flex-1 px-2.5 py-1.5 border border-[#3d2b1f]/10 rounded-lg text-xs" wire:keydown.enter.prevent="agregarCiudadPersonalizada">
+                            <button type="button" wire:click="agregarCiudadPersonalizada" class="px-3 py-1.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-bold rounded-lg transition-all active:scale-95">+</button>
                         </div>
                         @error('selectedCiudades') <span class="text-[10px] text-red-600 font-bold block pt-1">{{ $message }}</span> @enderror
                     </div>
