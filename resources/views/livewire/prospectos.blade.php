@@ -450,7 +450,8 @@
         
         <!-- MODAL DE CREACIÓN / EDICIÓN -->
         @if($showCreateModal)
-            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+            @teleport('body')
+            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity" style="z-index: 9999;">
                 <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all">
                     
                     <!-- Modal Header -->
@@ -535,11 +536,13 @@
                     </form>
                 </div>
             </div>
+            @endteleport
         @endif
 
         <!-- MODAL DE PLANTILLAS DE WHATSAPP -->
         @if($showWhatsappModal && $selectedProspectForWhatsapp)
-            <div class="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center p-0 sm:p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+            @teleport('body')
+            <div class="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center p-0 sm:p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity" style="z-index: 9999;">
                 <div class="bg-white border-t sm:border border-[#3d2b1f]/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all pb-12 sm:pb-6">
                     
                     <!-- Tirador táctil visual (Móvil) -->
@@ -658,6 +661,7 @@
 
                 </div>
             </div>
+            @endteleport
         @endif
         
     </div>
