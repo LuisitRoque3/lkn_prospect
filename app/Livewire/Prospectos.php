@@ -22,6 +22,10 @@ class Prospectos extends Component
     public $sortField = 'creado_at';
     public $sortDirection = 'desc';
 
+    // Propiedades optimizadas para evitar consultas repetitivas
+    public $girosDisponibles = [];
+    public $plantillasList = [];
+
     // Create/Edit Modal Properties
     public $showCreateModal = false;
     public $prospectoId;
@@ -107,7 +111,7 @@ class Prospectos extends Component
     public function edit($id)
     {
         $this->resetErrorBag();
-        $prospecto = Prospecto::findOrFail($id);
+        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->findOrFail($id);
         
         $this->prospectoId = $prospecto->id;
         $this->empresa = $prospecto->empresa;
@@ -147,32 +151,40 @@ class Prospectos extends Component
         } catch (\Exception $e) {
             // Silencioso en caso de que la migración no se haya ejecutado aún
         }
+
+        // Cargar listas una sola vez en el ciclo de vida del componente
+        $this->cargarGirosDisponibles();
+        $this->cargarPlantillas();
+    }
+
+    public function cargarGirosDisponibles()
+    {
+        try {
+            $this->girosDisponibles = \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
+                ->where('organizacion_id', Auth::user()->organizacion_id)
+                ->whereNotNull('giro_negocio')
+                ->where('giro_negocio', '!=', '')
+                ->distinct()
+                ->pluck('giro_negocio')
+                ->toArray();
+        } catch (\Exception $e) {
+            $this->girosDisponibles = [];
+        }
+    }
+
+    public function cargarPlantillas()
+    {
+        try {
+            $this->plantillasList = \App\Models\PlantillaWhatsapp::all()->toArray();
+        } catch (\Exception $e) {
+            $this->plantillasList = [];
+        }
     }
 
     public function getTemplates()
     {
-        try {
-            return \App\Models\PlantillaWhatsapp::all();
-        } catch (\Exception $e) {
-            // Fallback si la tabla no existe aún
-            return collect([
-                (object)[
-                    'id' => 1,
-                    'titulo' => 'Plantilla 1: Control y Optimización',
-                    'mensaje' => "Hola, me comunico de Locknode. Analizando el crecimiento operativo de {empresa}, nos gustaría compartirles nuestro modelo de control y optimización de flotas. ¿Con quién podría revisar esto brevemente?"
-                ],
-                (object)[
-                    'id' => 2,
-                    'titulo' => 'Plantilla 2: Reducir combustible y mermas',
-                    'mensaje' => "Hola, en Locknode ayudamos a empresas en el sector de logística a reducir mermas de combustible y eficientar rutas de entrega. Nos interesaría presentarle una propuesta rápida para {empresa}. ¿Tendría 5 minutos esta semana?"
-                ],
-                (object)[
-                    'id' => 3,
-                    'titulo' => 'Plantilla 3: Alianzas y Automatización',
-                    'mensaje' => "Hola, veo que manejan logística y transporte en {ubicacion}. En Locknode estamos haciendo alianzas para automatizar operaciones de {empresa}. ¿A qué correo podría enviarle nuestra presentación?"
-                ],
-            ]);
-        }
+        // Retornar la lista en caché local en lugar de consultar BD
+        return collect(json_decode(json_encode($this->plantillasList)));
     }
 
     public function saveTemplate()
@@ -180,65 +192,40 @@ class Prospectos extends Component
         $this->validate([
             'tempTemplateTitulo' => 'required|string|max:255',
             'tempTemplateMensaje' => 'required|string',
-        ], [
-            'tempTemplateTitulo.required' => 'El título es obligatorio.',
-            'tempTemplateMensaje.required' => 'El mensaje es obligatorio.',
         ]);
 
-        $limit = 10;
-        try {
-            if (!$this->tempTemplateId && \App\Models\PlantillaWhatsapp::count() >= $limit) {
-                session()->flash('template_error', "Solo se permiten hasta {$limit} plantillas en el catálogo.");
-                return;
-            }
-
-            if ($this->tempTemplateId) {
-                $plantilla = \App\Models\PlantillaWhatsapp::find($this->tempTemplateId);
-                if ($plantilla) {
-                    $plantilla->update([
-                        'titulo' => $this->tempTemplateTitulo,
-                        'mensaje' => $this->tempTemplateMensaje,
-                    ]);
-                }
-            } else {
-                \App\Models\PlantillaWhatsapp::create([
-                    'titulo' => $this->tempTemplateTitulo,
-                    'mensaje' => $this->tempTemplateMensaje,
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Manejo por si no se ha ejecutado la migración
+        if ($this->tempTemplateId) {
+            $template = \App\Models\PlantillaWhatsapp::findOrFail($this->tempTemplateId);
+            $template->update([
+                'titulo' => $this->tempTemplateTitulo,
+                'mensaje' => $this->tempTemplateMensaje,
+            ]);
+            session()->flash('message', 'Plantilla actualizada.');
+        } else {
+            \App\Models\PlantillaWhatsapp::create([
+                'titulo' => $this->tempTemplateTitulo,
+                'mensaje' => $this->tempTemplateMensaje,
+            ]);
+            session()->flash('message', 'Plantilla creada.');
         }
 
-        $this->reset(['tempTemplateId', 'tempTemplateTitulo', 'tempTemplateMensaje', 'showTemplateManager']);
+        $this->cargarPlantillas(); // Recargar caché
+        $this->reset(['tempTemplateId', 'tempTemplateTitulo', 'tempTemplateMensaje']);
     }
 
     public function editTemplate($id)
     {
-        try {
-            $plantilla = \App\Models\PlantillaWhatsapp::find($id);
-            if ($plantilla) {
-                $this->tempTemplateId = $plantilla->id;
-                $this->tempTemplateTitulo = $plantilla->titulo;
-                $this->tempTemplateMensaje = $plantilla->mensaje;
-                $this->showTemplateManager = true;
-            }
-        } catch (\Exception $e) {}
+        $template = \App\Models\PlantillaWhatsapp::findOrFail($id);
+        $this->tempTemplateId = $template->id;
+        $this->tempTemplateTitulo = $template->titulo;
+        $this->tempTemplateMensaje = $template->mensaje;
     }
 
     public function deleteTemplate($id)
     {
-        try {
-            $plantilla = \App\Models\PlantillaWhatsapp::find($id);
-            if ($plantilla) {
-                $plantilla->delete();
-            }
-        } catch (\Exception $e) {}
-
-        if ($this->selectedTemplate == $id) {
-            $this->selectedTemplate = null;
-            $this->whatsappMessage = '';
-        }
+        \App\Models\PlantillaWhatsapp::findOrFail($id)->delete();
+        $this->cargarPlantillas(); // Recargar caché
+        session()->flash('message', 'Plantilla eliminada.');
     }
 
     public function cancelTemplateEdit()
@@ -249,57 +236,36 @@ class Prospectos extends Component
     public function openWhatsappModal($id)
     {
         $this->selectedProspectForWhatsapp = Prospecto::findOrFail($id);
-        
-        $templates = $this->getTemplates();
-        $firstTemplate = $templates->first();
-        
-        if ($firstTemplate) {
-            $this->selectedTemplate = $firstTemplate->id;
-            $this->whatsappMessage = $this->getFormattedMessage($firstTemplate->id);
-        } else {
-            $this->selectedTemplate = null;
-            $this->whatsappMessage = '';
-        }
-        
+        $this->whatsappMessage = '';
+        $this->selectedTemplate = null;
         $this->showWhatsappModal = true;
     }
 
-    public function updatedSelectedTemplate($value)
+    public function updatedSelectedTemplate($templateId)
     {
-        if ($this->selectedProspectForWhatsapp) {
-            $this->whatsappMessage = $this->getFormattedMessage($value);
+        if ($templateId) {
+            $template = collect($this->plantillasList)->firstWhere('id', $templateId);
+            if ($template) {
+                $mensaje = is_array($template) ? $template['mensaje'] : $template->mensaje;
+                $this->whatsappMessage = $this->parseTemplate($mensaje, $this->selectedProspectForWhatsapp->empresa, $this->selectedProspectForWhatsapp->ubicacion_local);
+            }
+        } else {
+            $this->whatsappMessage = '';
         }
     }
 
-    private function getFormattedMessage($templateId)
+    private function parseTemplate($template, $empresa, $ubicacion)
     {
-        if (!$templateId) return '';
-        
-        $templates = $this->getTemplates();
-        $templateObj = $templates->firstWhere('id', $templateId);
-        
-        // Si no lo encuentra por ID, podría ser de los fallbacks por defecto
-        if (!$templateObj && is_numeric($templateId)) {
-            $fallbackTemplates = [
-                1 => "Hola, me comunico de Locknode. Analizando el crecimiento operativo de {empresa}, nos gustaría compartirles nuestro modelo de control y optimización de flotas. ¿Con quién podría revisar esto brevemente?",
-                2 => "Hola, en Locknode ayudamos a empresas en el sector de logística a reducir mermas de combustible y eficientar rutas de entrega. Nos interesaría presentarle una propuesta rápida para {empresa}. ¿Tendría 5 minutos esta semana?",
-                3 => "Hola, veo que manejan logística y transporte en {ubicacion}. En Locknode estamos haciendo alianzas para automatizar operaciones de {empresa}. ¿A qué correo podría enviarle nuestra presentación?"
-            ];
-            $template = $fallbackTemplates[$templateId] ?? '';
-        } else {
-            $template = $templateObj ? $templateObj->mensaje : '';
+        if (!$ubicacion) {
+            $ubicacion = 'México';
         }
         
-        $empresa = $this->selectedProspectForWhatsapp->empresa ?? '';
-        $ubicacion = $this->selectedProspectForWhatsapp->ubicacion_local ?? 'su ciudad';
-        
-        // Limpiamos la ubicación de detalles de calle para que en el mensaje se lea natural (ej: "Querétaro")
-        if (str_contains($ubicacion, ',')) {
+        // Limpiar dirección muy larga para el mensaje
+        if (strlen($ubicacion) > 30) {
             $parts = explode(',', $ubicacion);
-            $ubicacion = trim(end($parts));
-            // Si el último es México/MX, intentamos con el anterior
-            if (in_array(strtolower($ubicacion), ['méxico', 'mexico', 'mx']) && count($parts) > 1) {
-                $ubicacion = trim($parts[count($parts) - 2]);
+            if (count($parts) > 1) {
+                // Tomar ciudad y estado
+                $ubicacion = trim($parts[count($parts) - 3] ?? $parts[0]);
             }
         }
 
@@ -326,7 +292,7 @@ class Prospectos extends Component
         $this->validate();
 
         if ($this->prospectoId) {
-            $prospecto = Prospecto::where('user_id', Auth::id())->findOrFail($this->prospectoId);
+            $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->findOrFail($this->prospectoId);
             $prospecto->update([
                 'empresa' => $this->empresa,
                 'ubicacion_local' => $this->ubicacion_local,
@@ -349,18 +315,20 @@ class Prospectos extends Component
                 'estado_contacto' => $this->estado_contacto,
                 'priority' => $this->priority,
                 'tracking_uuid' => $uuid,
-                'user_id' => Auth::id(), // Guardar el user_id del usuario logueado
+                'user_id' => Auth::id(),
+                'organizacion_id' => Auth::user()->organizacion_id,
             ]);
             session()->flash('message', 'Prospecto creado exitosamente.');
         }
 
+        $this->cargarGirosDisponibles(); // Recargar si se creó nuevo giro
         $this->showCreateModal = false;
         $this->reset(['prospectoId', 'empresa', 'ubicacion_local', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto', 'priority']);
     }
 
     public function updateStatus($id, $status)
     {
-        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
+        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
         if ($prospecto) {
             $prospecto->estado_contacto = $status;
             $prospecto->save();
@@ -369,7 +337,7 @@ class Prospectos extends Component
 
     public function updatePriority($id, $priority)
     {
-        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
+        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
         if ($prospecto) {
             $prospecto->priority = $priority;
             $prospecto->save();
@@ -378,7 +346,7 @@ class Prospectos extends Component
 
     public function sendColdEmail($id)
     {
-        $prospecto = Prospecto::where('user_id', Auth::id())->find($id);
+        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
         if ($prospecto && $prospecto->correo_corporativo) {
             // Generar UUID si es un prospecto viejo que no lo tiene
             if (!$prospecto->tracking_uuid) {
@@ -402,11 +370,8 @@ class Prospectos extends Component
     {
         $query = Prospecto::query();
 
-        // Filtrar leads: Solo los del usuario autenticado (o huérfanos/legacy de soporte)
-        $query->where(function($q) {
-            $q->where('user_id', Auth::id())
-              ->orWhereNull('user_id');
-        });
+        // Filtrar leads: Solo los de la organización del usuario autenticado
+        $query->where('organizacion_id', Auth::user()->organizacion_id);
 
         if ($this->search) {
             $query->where(function($q) {
@@ -435,26 +400,9 @@ class Prospectos extends Component
             $query->where('vacantes_activas', $this->vacantesFilter);
         }
 
-        // Obtener giros únicos disponibles en la BD para el buscador/filtro dinámico
-        $girosDisponibles = [];
-        try {
-            $girosDisponibles = \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
-                ->where(function($q) {
-                    $q->where('user_id', Auth::id())
-                      ->orWhereNull('user_id');
-                })
-                ->whereNotNull('giro_negocio')
-                ->where('giro_negocio', '!=', '')
-                ->distinct()
-                ->pluck('giro_negocio')
-                ->toArray();
-        } catch (\Exception $e) {
-            // Fallback si falla
-        }
-
         return view('livewire.prospectos', [
             'prospectos' => $query->orderBy($this->sortField, $this->sortDirection)->paginate(15),
-            'girosDisponibles' => $girosDisponibles
+            'girosDisponibles' => $this->girosDisponibles
         ]);
     }
 }

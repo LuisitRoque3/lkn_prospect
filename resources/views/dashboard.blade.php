@@ -61,25 +61,10 @@
             </div>
         </div>
         
-        <!-- Navegación móvil por pestañas (Mobile sub-bar) -->
-        <div class="flex sm:hidden border-t border-[#3d2b1f]/5 bg-white p-2">
-            <button @click="activeTab = 'leads'"
-                    :class="activeTab === 'leads' ? 'bg-[#a3583d] text-white shadow-sm' : 'text-[#3d2b1f]/70'"
-                    class="flex-1 py-2 text-center text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                📊 Leads
-            </button>
-            @if(auth()->user()->is_admin)
-                <button @click="activeTab = 'config'"
-                        :class="activeTab === 'config' ? 'bg-[#a3583d] text-white shadow-sm' : 'text-[#3d2b1f]/70'"
-                        class="flex-1 py-2 text-center text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                    ⚙️ Configurar
-                </button>
-            @endif
-        </div>
     </nav>
 
     <!-- MAIN BODY -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-6">
         
         <!-- Prospectos (CRM) Tab -->
         <div x-show="activeTab === 'leads'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
@@ -94,6 +79,24 @@
         @endif
 
     </main>
+
+    <!-- BOTTOM TAB BAR (MOBILE-FIRST) -->
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-3xl flex justify-around p-3">
+        <button @click="activeTab = 'leads'"
+                :class="activeTab === 'leads' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
+                class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1 flex-1">
+            <span class="text-xl">📊</span>
+            <span class="text-[9px] uppercase tracking-wider">Leads</span>
+        </button>
+        @if(auth()->user()->is_admin)
+            <button @click="activeTab = 'config'"
+                    :class="activeTab === 'config' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
+                    class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1 flex-1">
+                <span class="text-xl">⚙️</span>
+                <span class="text-[9px] uppercase tracking-wider">Configurar</span>
+            </button>
+        @endif
+    </div>
 
     @livewireScripts
 </body>

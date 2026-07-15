@@ -15,13 +15,13 @@ from extractor_denue import motor_denue_y_enriquecimiento
 
 def obtener_configuraciones_activas():
     """
-    Obtiene las tareas de extracción activas configuradas por los usuarios desde la BD.
+    Obtiene las tareas de extracción activas configuradas por las organizaciones desde la BD.
     """
     configs = []
     try:
         conexion = mysql.connector.connect(**DB_CONFIG)
         cursor = conexion.cursor(dictionary=True)
-        cursor.execute("SELECT id, user_id, giro, ciudad FROM configuraciones_extraccion WHERE estado = 1")
+        cursor.execute("SELECT id, organizacion_id, giro, ciudad FROM configuraciones_extraccion WHERE estado = 1")
         configs = cursor.fetchall()
     except Exception as e:
         print(f"[-] Error al consultar configuraciones_extraccion: {e}")
@@ -31,12 +31,12 @@ def obtener_configuraciones_activas():
             conexion.close()
     return configs
 
-def ejecutar_extraccion_para_combinacion(giro, ciudad, user_id=None):
+def ejecutar_extraccion_para_combinacion(giro, ciudad, organizacion_id=None):
     print("=" * 60)
     print(f"[*] PROCESANDO TAREA DE EXTRACCIÓN")
     print(f"[*] Giro: {giro.upper()}")
     print(f"[*] Ciudad: {ciudad.upper()}")
-    print(f"[*] Usuario Asignado (ID): {user_id}")
+    print(f"[*] Organización Destino (ID): {organizacion_id}")
     print("=" * 60)
     
     todos_los_leads = []
@@ -65,9 +65,10 @@ def ejecutar_extraccion_para_combinacion(giro, ciudad, user_id=None):
 
     # --- PROCESAMIENTO E INYECCIÓN ---
     if todos_los_leads:
-        # Asignar el user_id a cada lead extraído
+        # Asignar el organizacion_id y limpiar user_id (para que pertenezca a nivel grupal)
         for lead in todos_los_leads:
-            lead['user_id'] = user_id
+            lead['organizacion_id'] = organizacion_id
+            lead['user_id'] = None
             
         # Eliminar duplicados de teléfonos en esta corrida
         leads_unicos = {l['telefono_whatsapp']: l for l in todos_los_leads}.values()
@@ -83,26 +84,26 @@ def main():
     if len(sys.argv) > 2:
         giro_arg = sys.argv[1]
         ciudad_arg = sys.argv[2]
-        ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, user_id=None)
+        ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, organizacion_id=None)
         return
 
-    # Consultar tareas programadas por usuarios en la base de datos
+    # Consultar tareas programadas por organizaciones en la base de datos
     tareas_activas = obtener_configuraciones_activas()
     
     if tareas_activas:
-        print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas por usuarios.")
+        print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas por organizaciones.")
         for tarea in tareas_activas:
             ejecutar_extraccion_para_combinacion(
                 giro=tarea['giro'], 
                 ciudad=tarea['ciudad'], 
-                user_id=tarea['user_id']
+                organizacion_id=tarea['organizacion_id']
             )
     else:
         # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo
         print("[*] No hay tareas activas programadas en BD. Usando fallback de catálogo aleatorio...")
         giro_aleatorio = random.choice(GIROS)
         ciudad_aleatoria = random.choice(CIUDADES)
-        ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, user_id=None)
+        ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, organizacion_id=None)
 
 if __name__ == "__main__":
     main()

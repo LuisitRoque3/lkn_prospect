@@ -30,8 +30,66 @@
             </div>
         @endif
 
-        <!-- FILTROS Y BUSCADOR -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+        <!-- MÓVIL: FILTROS TÁCTILES HORIZONTALES (MOBILE-FIRST) -->
+        <div class="sm:hidden space-y-3">
+            <!-- Buscador -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span class="text-[#3d2b1f]/40">🔍</span>
+                </div>
+                <input type="text" 
+                       wire:model.live="search" 
+                       placeholder="Buscar por empresa, contacto..." 
+                       class="w-full pl-10 pr-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] placeholder-[#3d2b1f]/40 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+            </div>
+            
+            <!-- Cinta de Estados -->
+            <div class="flex overflow-x-auto gap-2 pb-1 -mx-4 px-4 scrollbar-none">
+                <button wire:click="$set('statusFilter', '')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === '' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    Todos
+                </button>
+                <button wire:click="$set('statusFilter', 'pendiente')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === 'pendiente' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    ⏳ Pendientes
+                </button>
+                <button wire:click="$set('statusFilter', 'enviado')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === 'enviado' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    ✉️ Contactados
+                </button>
+                <button wire:click="$set('statusFilter', 'respondido')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === 'respondido' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    💬 En Conversación
+                </button>
+                <button wire:click="$set('statusFilter', 'descartado')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === 'descartado' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    🗑️ Descartados
+                </button>
+            </div>
+
+            <!-- Cinta de Filtros Rápidos (Prioridad, Fuentes y Contratando) -->
+            <div class="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-none">
+                <!-- Chip Contratando -->
+                <button wire:click="$set('vacantesFilter', $vacantesFilter === '1' ? '' : '1')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $vacantesFilter === '1' ? 'bg-emerald-600 text-white border-transparent' : 'bg-white text-emerald-800 border-emerald-200' }}">
+                    🔥 Contratando
+                </button>
+                <!-- Chips Prioridades -->
+                <button wire:click="$set('priorityFilter', $priorityFilter === 'alfa' ? '' : 'alfa')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $priorityFilter === 'alfa' ? 'bg-red-500 text-white border-transparent' : 'bg-white text-red-600 border-red-200' }}">
+                    🔴 Alta (Alfa)
+                </button>
+                <button wire:click="$set('priorityFilter', $priorityFilter === 'bravo' ? '' : 'bravo')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $priorityFilter === 'bravo' ? 'bg-yellow-500 text-white border-transparent' : 'bg-white text-yellow-600 border-yellow-200' }}">
+                    🟡 Med (Bravo)
+                </button>
+                <!-- Chips Fuentes -->
+                <button wire:click="$set('fuenteFilter', $fuenteFilter === 'maps' ? '' : 'maps')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $fuenteFilter === 'maps' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    📍 Maps
+                </button>
+                <button wire:click="$set('fuenteFilter', $fuenteFilter === 'empleo' ? '' : 'empleo')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $fuenteFilter === 'empleo' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    💼 Empleos
+                </button>
+                <button wire:click="$set('fuenteFilter', $fuenteFilter === 'denue' ? '' : 'denue')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $fuenteFilter === 'denue' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
+                    🏢 DENUE
+                </button>
+            </div>
+        </div>
+
+        <!-- ESCRITORIO: FILTROS Y BUSCADOR -->
+        <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
             <div class="relative md:col-span-2 sm:col-span-2">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <span class="text-[#3d2b1f]/40">🔍</span>
@@ -80,7 +138,7 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-4 bg-white border border-[#3d2b1f]/5 px-4 py-3 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/80">
+        <div class="hidden sm:flex items-center gap-4 bg-white border border-[#3d2b1f]/5 px-4 py-3 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/80">
             <span>Filtro de Contratación:</span>
             <label class="inline-flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="vacantesFilter" value="" wire:model.live="vacantesFilter" class="text-[#a3583d] focus:ring-[#a3583d]/20">
@@ -179,7 +237,7 @@
                         <div class="grid grid-cols-4 gap-2 pt-2">
                             <!-- Botón Editar -->
                             <button wire:click="edit({{ $prospecto->id }})" 
-                                    class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl transition-all group/edit">
+                                    class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl transition-all active:scale-95 group/edit">
                                 <span class="text-base group-hover/edit:scale-110 transition-transform">✏️</span>
                                 <span class="text-[9px] font-black uppercase tracking-wider">Editar</span>
                             </button>
@@ -187,12 +245,12 @@
                             <!-- Botón Llamar -->
                             @if($prospecto->telefono_whatsapp)
                                 <a href="tel:{{ preg_replace('/[^0-9+]/', '', $prospecto->telefono_whatsapp) }}" 
-                                   class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl transition-all group/call">
+                                   class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl transition-all active:scale-95 group/call">
                                     <span class="text-base group-hover/call:scale-110 transition-transform">📞</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Llamar</span>
                                 </a>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
+                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
                                     <span class="text-base opacity-50">📞</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Sin Tel.</span>
                                 </div>
@@ -201,12 +259,12 @@
                             <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
                                 <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
-                                        class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all group/wa">
+                                        class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all active:scale-95 group/wa">
                                     <span class="text-base group-hover/wa:scale-110 transition-transform">💬</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">WhatsApp</span>
                                 </button>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
+                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
                                     <span class="text-base opacity-50">💬</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Sin Teléfono</span>
                                 </div>
@@ -215,12 +273,12 @@
                             <!-- Botón Email -->
                             @if($prospecto->correo_corporativo && $prospecto->correo_corporativo !== 'N/A')
                                 <button wire:click="sendColdEmail({{ $prospecto->id }})" 
-                                        class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-[#a3583d]/10 hover:bg-[#a3583d]/20 border border-[#a3583d]/20 text-[#8f4730] rounded-xl transition-all group/mail">
+                                        class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#a3583d]/10 hover:bg-[#a3583d]/20 border border-[#a3583d]/20 text-[#8f4730] rounded-xl transition-all active:scale-95 group/mail">
                                     <span class="text-base group-hover/mail:scale-110 transition-transform">✉️</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Enviar Mail</span>
                                 </button>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 p-2 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
+                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
                                     <span class="text-base opacity-50">✉️</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Sin Correo</span>
                                 </div>
@@ -481,9 +539,12 @@
 
         <!-- MODAL DE PLANTILLAS DE WHATSAPP -->
         @if($showWhatsappModal && $selectedProspectForWhatsapp)
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
-                <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all">
+            <div class="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center p-0 sm:p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity">
+                <div class="bg-white border-t sm:border border-[#3d2b1f]/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all pb-12 sm:pb-6">
                     
+                    <!-- Tirador táctil visual (Móvil) -->
+                    <div class="sm:hidden w-12 h-1.5 bg-[#3d2b1f]/20 rounded-full mx-auto mb-2 cursor-pointer" wire:click="closeWhatsappModal"></div>
+
                     <!-- Modal Header -->
                     <div class="flex justify-between items-center pb-4 border-b border-[#3d2b1f]/10">
                         <div class="space-y-1">
