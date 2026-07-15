@@ -2,6 +2,7 @@ import sys
 import os
 import random
 import traceback
+import json
 import mysql.connector
 from mysql.connector import Error
 
@@ -34,8 +35,8 @@ def obtener_configuraciones_activas():
 def ejecutar_extraccion_para_combinacion(giro, ciudad, organizacion_id=None):
     print("=" * 60)
     print(f"[*] PROCESANDO TAREA DE EXTRACCIÓN")
-    print(f"[*] Giro: {giro.upper()}")
-    print(f"[*] Ciudad: {ciudad.upper()}")
+    print(f"[*] Giro Elegido: {giro.upper()}")
+    print(f"[*] Ciudad Elegida: {ciudad.upper()}")
     print(f"[*] Organización Destino (ID): {organizacion_id}")
     print("=" * 60)
     
@@ -79,6 +80,22 @@ def ejecutar_extraccion_para_combinacion(giro, ciudad, organizacion_id=None):
     else:
         print("\n[-] No se obtuvieron leads para esta combinación.")
 
+def parse_param(param_str, fallback_catalog):
+    """
+    Intenta decodificar un campo como array JSON.
+    Si falla, lo devuelve como una lista de un solo elemento (fallback para texto plano antiguo).
+    Si está vacío, devuelve el catálogo por defecto.
+    """
+    if not param_str:
+        return fallback_catalog
+    try:
+        data = json.loads(param_str)
+        if isinstance(data, list) and len(data) > 0:
+            return data
+        return [str(param_str)]
+    except (json.JSONDecodeError, TypeError):
+        return [str(param_str)]
+
 def main():
     # Soporte para argumentos manuales: python orquestador.py "giro" "ciudad"
     if len(sys.argv) > 2:
@@ -91,15 +108,23 @@ def main():
     tareas_activas = obtener_configuraciones_activas()
     
     if tareas_activas:
-        print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas por organizaciones.")
+        print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas.")
         for tarea in tareas_activas:
+            # Decodificar giros y ciudades (soporta múltiples en JSON o texto simple antiguo)
+            giros_disponibles = parse_param(tarea['giro'], GIROS)
+            ciudades_disponibles = parse_param(tarea['ciudad'], CIUDADES)
+            
+            # Elegir aleatoriamente uno de cada lista configurada para ESTA tarea
+            giro_elegido = random.choice(giros_disponibles)
+            ciudad_elegida = random.choice(ciudades_disponibles)
+            
             ejecutar_extraccion_para_combinacion(
-                giro=tarea['giro'], 
-                ciudad=tarea['ciudad'], 
+                giro=giro_elegido, 
+                ciudad=ciudad_elegida, 
                 organizacion_id=tarea['organizacion_id']
             )
     else:
-        # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo
+        # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo completo
         print("[*] No hay tareas activas programadas en BD. Usando fallback de catálogo aleatorio...")
         giro_aleatorio = random.choice(GIROS)
         ciudad_aleatoria = random.choice(CIUDADES)

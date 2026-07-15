@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 new class extends Component
 {
-    public $giro = '';
-    public $ciudad = '';
+    public $selectedGiros = [];
+    public $selectedCiudades = [];
     public $selected_org_id = '';
     
     // Pestaña Interna activa: 'extractor', 'organizaciones', 'usuarios'
@@ -51,6 +51,17 @@ new class extends Component
         $this->resetErrorBag();
     }
 
+    // Acciones de Marcación Rápida
+    public function seleccionarTodosGiros()
+    {
+        $this->selectedGiros = $this->listaGiros;
+    }
+
+    public function seleccionarTodasCiudades()
+    {
+        $this->selectedCiudades = $this->listaCiudades;
+    }
+
     // ==========================================
     // SECCIÓN A: TAREAS DE EXTRACCIÓN (CRON)
     // ==========================================
@@ -59,22 +70,22 @@ new class extends Component
         abort_unless(Auth::user()->is_admin, 403);
         
         $this->validate([
-            'giro' => 'required|string',
-            'ciudad' => 'required|string',
+            'selectedGiros' => 'required|array|min:1',
+            'selectedCiudades' => 'required|array|min:1',
             'selected_org_id' => 'required|exists:organizaciones,id',
         ]);
 
         DB::table('configuraciones_extraccion')->insert([
             'user_id' => Auth::id(), // Creador
             'organizacion_id' => $this->selected_org_id, // Organización asignada
-            'giro' => strtolower($this->giro),
-            'ciudad' => $this->ciudad,
+            'giro' => json_encode($this->selectedGiros),
+            'ciudad' => json_encode($this->selectedCiudades),
             'estado' => true,
             'created_at' => now(),
             'updated_at' => now()
         ]);
 
-        $this->reset(['giro', 'ciudad', 'selected_org_id']);
+        $this->reset(['selectedGiros', 'selectedCiudades', 'selected_org_id']);
         session()->flash('message', 'Tarea programada asignada con éxito a la organización.');
     }
 
@@ -181,7 +192,7 @@ new class extends Component
         </p>
     </div>
 
-    <!-- SUB-MENÚ DE PESTAÑAS INTERNAS (RESPONSIVO) -->
+    <!-- SUB-MENÚ DE PESTAÑAS INTERNAS -->
     <div class="flex overflow-x-auto gap-2 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none border-b border-[#3d2b1f]/5">
         <button wire:click="changeSection('extractor')" 
                 class="px-4 py-2 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all whitespace-nowrap {{ $currentSection === 'extractor' ? 'border-[#a3583d] text-[#a3583d]' : 'border-transparent text-[#3d2b1f]/60 hover:text-[#3d2b1f]' }}">
@@ -209,51 +220,64 @@ new class extends Component
                 </div>
             @endif
 
-            <!-- Formulario de Tarea -->
-            <form wire:submit="agregar" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
-                        Giro de Negocio
-                    </label>
-                    <input wire:model="giro" list="giros-list" placeholder="Escribe o selecciona giro..." class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                    <datalist id="giros-list">
-                        @foreach($listaGiros as $g)
-                            <option value="{{ ucwords($g) }}">
-                        @endforeach
-                    </datalist>
-                    @error('giro') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
+            <!-- Formulario de Tarea de Selección Múltiple -->
+            <form wire:submit="agregar" class="space-y-4 bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Checkbox de Giros -->
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-56 overflow-y-auto">
+                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                            <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">1. Seleccionar Giros</span>
+                            <button type="button" wire:click="seleccionarTodosGiros" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todos</button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 pt-1">
+                            @foreach($listaGiros as $g)
+                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                    <input type="checkbox" value="{{ $g }}" wire:model="selectedGiros" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
+                                    <span class="capitalize text-[#3d2b1f]/85">{{ $g }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('selectedGiros') <span class="text-[10px] text-red-600 font-bold block pt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Checkbox de Ciudades -->
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-56 overflow-y-auto">
+                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                            <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">2. Seleccionar Ciudades</span>
+                            <button type="button" wire:click="seleccionarTodasCiudades" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todas</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            @foreach($listaCiudades as $c)
+                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                    <input type="checkbox" value="{{ $c }}" wire:model="selectedCiudades" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
+                                    <span class="text-[#3d2b1f]/85">{{ $c }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('selectedCiudades') <span class="text-[10px] text-red-600 font-bold block pt-1">{{ $message }}</span> @enderror
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
-                        Ciudad / Ubicación
-                    </label>
-                    <input wire:model="ciudad" list="ciudades-list" placeholder="Escribe o selecciona ciudad..." class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                    <datalist id="ciudades-list">
-                        @foreach($listaCiudades as $c)
-                            <option value="{{ $c }}">
-                        @endforeach
-                    </datalist>
-                    @error('ciudad') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
-                </div>
+                <!-- Selección de Organización y Botón de Envío -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pt-2 border-t border-[#3d2b1f]/5">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
+                            3. Asignar Leads Extraídos a Grupo
+                        </label>
+                        <select wire:model="selected_org_id" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+                            <option value="">Selecciona organización...</option>
+                            @foreach($this->getOrganizaciones() as $org)
+                                <option value="{{ $org->id }}">{{ $org->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('selected_org_id') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
+                    </div>
 
-                <div>
-                    <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
-                        Asignar Leads a Grupo
-                    </label>
-                    <select wire:model="selected_org_id" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                        <option value="">Selecciona organización...</option>
-                        @foreach($this->getOrganizaciones() as $org)
-                            <option value="{{ $org->id }}">{{ $org->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('selected_org_id') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
-                </div>
-
-                <div>
-                    <button type="submit" class="w-full py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95">
-                        + Programar Tarea
-                    </button>
+                    <div>
+                        <button type="submit" class="w-full py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95">
+                            + Programar Tarea Múltiple
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -266,10 +290,24 @@ new class extends Component
                 <!-- MÓVIL: TARJETAS -->
                 <div class="block sm:hidden space-y-4">
                     @forelse($this->getConfigs() as $c)
+                        @php
+                            $girosArr = json_decode($c->giro, true);
+                            $ciudadesArr = json_decode($c->ciudad, true);
+                            
+                            $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro);
+                            $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : $c->ciudad;
+                            
+                            $girosCount = is_array($girosArr) ? count($girosArr) : 1;
+                            $ciudadesCount = is_array($ciudadesArr) ? count($ciudadesArr) : 1;
+                        @endphp
                         <div class="bg-[#fdfaf6] border border-[#3d2b1f]/10 p-4 rounded-2xl space-y-3 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-black uppercase text-[#a3583d]">{{ $c->giro }}</span>
-                                <span class="text-[10px] text-[#3d2b1f]/60 font-bold">📍 {{ $c->ciudad }}</span>
+                            <div class="space-y-1">
+                                <p class="text-[10px] font-black uppercase text-[#a3583d]">
+                                    Giros ({{ $girosCount }}): <span class="text-[#3d2b1f] tracking-tight normal-case font-semibold">{{ $girosText }}</span>
+                                </p>
+                                <p class="text-[10px] font-black uppercase text-gray-500">
+                                    Ciudades ({{ $ciudadesCount }}): <span class="text-[#3d2b1f] tracking-tight normal-case font-semibold">{{ $ciudadesText }}</span>
+                                </p>
                             </div>
                             <div class="text-[10px] text-[#3d2b1f]/80 border-t border-[#3d2b1f]/5 pt-2">
                                 <p class="font-semibold">Grupo Destino: <span class="font-black text-[#3d2b1f]">{{ $c->org_name }}</span></p>
@@ -296,8 +334,8 @@ new class extends Component
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr class="bg-gray-50 border-b border-[#3d2b1f]/10">
-                                <th class="p-3 font-bold text-[#3d2b1f]/70">Giro</th>
-                                <th class="p-3 font-bold text-[#3d2b1f]/70">Ciudad</th>
+                                <th class="p-3 font-bold text-[#3d2b1f]/70">Giros Asignados</th>
+                                <th class="p-3 font-bold text-[#3d2b1f]/70">Ciudades Asignadas</th>
                                 <th class="p-3 font-bold text-[#3d2b1f]/70">Grupo Destino</th>
                                 <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Estado (Cron)</th>
                                 <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Acción</th>
@@ -305,9 +343,25 @@ new class extends Component
                         </thead>
                         <tbody class="divide-y divide-[#3d2b1f]/5">
                             @forelse($this->getConfigs() as $c)
+                                @php
+                                    $girosArr = json_decode($c->giro, true);
+                                    $ciudadesArr = json_decode($c->ciudad, true);
+                                    
+                                    $girosText = is_array($girosArr) ? implode(', ', array_map('ucwords', $girosArr)) : ucwords($c->giro);
+                                    $ciudadesText = is_array($ciudadesArr) ? implode(', ', $ciudadesArr) : $c->ciudad;
+                                    
+                                    $girosCount = is_array($girosArr) ? count($girosArr) : 1;
+                                    $ciudadesCount = is_array($ciudadesArr) ? count($ciudadesArr) : 1;
+                                @endphp
                                 <tr class="hover:bg-[#fdfaf6]/50">
-                                    <td class="p-3 font-bold uppercase text-[#3d2b1f]">{{ $c->giro }}</td>
-                                    <td class="p-3 font-medium text-[#3d2b1f]/80">{{ $c->ciudad }}</td>
+                                    <td class="p-3 max-w-[220px]">
+                                        <div class="font-bold text-[#3d2b1f]">({{ $girosCount }}) seleccionados</div>
+                                        <div class="text-[10px] text-gray-500 truncate" title="{{ $girosText }}">{{ $girosText }}</div>
+                                    </td>
+                                    <td class="p-3 max-w-[220px]">
+                                        <div class="font-bold text-[#3d2b1f]">({{ $ciudadesCount }}) seleccionadas</div>
+                                        <div class="text-[10px] text-gray-500 truncate" title="{{ $ciudadesText }}">{{ $ciudadesText }}</div>
+                                    </td>
                                     <td class="p-3 font-bold text-[#3d2b1f]">{{ $c->org_name }}</td>
                                     <td class="p-3 text-center">
                                         <button wire:click="toggleEstado({{ $c->id }})" class="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border transition-all active:scale-95
