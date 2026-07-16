@@ -160,13 +160,21 @@ class Prospectos extends Component
     public function cargarGirosDisponibles()
     {
         try {
-            $this->girosDisponibles = \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
-                ->where('organizacion_id', Auth::user()->organizacion_id)
-                ->whereNotNull('giro_negocio')
-                ->where('giro_negocio', '!=', '')
-                ->distinct()
-                ->pluck('giro_negocio')
-                ->toArray();
+            $orgId = Auth::user()->organizacion_id;
+            // Almacenar en caché por 1 hora (3600 segundos) para evitar costosos table scans
+            $this->girosDisponibles = \Illuminate\Support\Facades\Cache::remember(
+                "giros_disponibles_org_" . ($orgId ?? 'null'), 
+                3600, 
+                function() use ($orgId) {
+                    return \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
+                        ->where('organizacion_id', $orgId)
+                        ->whereNotNull('giro_negocio')
+                        ->where('giro_negocio', '!=', '')
+                        ->distinct()
+                        ->pluck('giro_negocio')
+                        ->toArray();
+                }
+            );
         } catch (\Exception $e) {
             $this->girosDisponibles = [];
         }
@@ -321,6 +329,7 @@ class Prospectos extends Component
             session()->flash('message', 'Prospecto creado exitosamente.');
         }
 
+        \Illuminate\Support\Facades\Cache::forget("giros_disponibles_org_" . (Auth::user()->organizacion_id ?? 'null'));
         $this->cargarGirosDisponibles(); // Recargar si se creó nuevo giro
         $this->showCreateModal = false;
         $this->reset(['prospectoId', 'empresa', 'ubicacion_local', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto', 'priority']);
