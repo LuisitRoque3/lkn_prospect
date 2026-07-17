@@ -68,12 +68,16 @@
                 <button wire:click="$set('vacantesFilter', $vacantesFilter === '1' ? '' : '1')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $vacantesFilter === '1' ? 'bg-emerald-600 text-white border-transparent' : 'bg-white text-emerald-800 border-emerald-200' }}">
                     🔥 Contratando
                 </button>
+                <!-- Chip Sin Vacantes -->
+                <button wire:click="$set('vacantesFilter', $vacantesFilter === '0' ? '' : '0')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $vacantesFilter === '0' ? 'bg-slate-600 text-white border-transparent' : 'bg-white text-slate-700 border-slate-200' }}">
+                    🚫 Sin vacantes
+                </button>
                 <!-- Chips Prioridades -->
                 <button wire:click="$set('priorityFilter', $priorityFilter === 'alfa' ? '' : 'alfa')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $priorityFilter === 'alfa' ? 'bg-red-500 text-white border-transparent' : 'bg-white text-red-600 border-red-200' }}">
-                    🔴 Alta (Alfa)
+                    🔴 Alta
                 </button>
                 <button wire:click="$set('priorityFilter', $priorityFilter === 'bravo' ? '' : 'bravo')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $priorityFilter === 'bravo' ? 'bg-yellow-500 text-white border-transparent' : 'bg-white text-yellow-600 border-yellow-200' }}">
-                    🟡 Med (Bravo)
+                    🟡 Media
                 </button>
                 <!-- Chips Fuentes -->
                 <button wire:click="$set('fuenteFilter', $fuenteFilter === 'maps' ? '' : 'maps')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $fuenteFilter === 'maps' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
@@ -113,9 +117,9 @@
                 <select wire:model.live="priorityFilter" 
                         class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
                     <option value="">Prioridades</option>
-                    <option value="alfa">Alfa (Alta)</option>
-                    <option value="bravo">Bravo (Med)</option>
-                    <option value="charlie">Charlie (Baja)</option>
+                    <option value="alfa">Alta</option>
+                    <option value="bravo">Media</option>
+                    <option value="charlie">Baja</option>
                 </select>
             </div>
             <div class="col-span-1">
@@ -197,14 +201,18 @@
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-1">
-                            <span class="shrink-0 inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider
-                                {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border border-blue-100' : '' }}
-                                {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' }}
-                                {{ $prospecto->estado_contacto == 'respondido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : '' }}
-                                {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border border-red-100' : '' }}
-                            ">
-                                {{ $prospecto->estado_contacto ?: 'pendiente' }}
-                            </span>
+                            <select wire:change="updateStatus({{ $prospecto->id }}, $event.target.value)" 
+                                    class="shrink-0 inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider cursor-pointer appearance-none text-center border focus:outline-none focus:ring-1 focus:ring-gray-300
+                                    {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
+                                    {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border-amber-200' : '' }}
+                                    {{ $prospecto->estado_contacto == 'respondido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : '' }}
+                                    {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
+                                ">
+                                <option value="pendiente" {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'selected' : '' }}>🔵 Pendiente</option>
+                                <option value="enviado" {{ $prospecto->estado_contacto == 'enviado' ? 'selected' : '' }}>🟡 Contactado</option>
+                                <option value="respondido" {{ $prospecto->estado_contacto == 'respondido' ? 'selected' : '' }}>🟢 En Conversación</option>
+                                <option value="descartado" {{ $prospecto->estado_contacto == 'descartado' ? 'selected' : '' }}>🔴 Descartado</option>
+                            </select>
                         </div>
                     </div>
 
@@ -516,9 +524,9 @@
                             <div class="space-y-1 col-span-2 sm:col-span-1">
                                 <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Prioridad Táctica</label>
                                 <select wire:model="priority" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
-                                    <option value="alfa">🔴 Alfa (Alta)</option>
-                                    <option value="bravo">🟡 Bravo (Media)</option>
-                                    <option value="charlie">⚪ Charlie (Baja)</option>
+                                    <option value="alfa">🔴 Alta</option>
+                                    <option value="bravo">🟡 Media</option>
+                                    <option value="charlie">⚪ Baja</option>
                                 </select>
                                 @error('priority') <span class="text-red-500 font-bold text-[10px]">{{ $message }}</span> @enderror
                             </div>
