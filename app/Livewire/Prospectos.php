@@ -19,6 +19,7 @@ class Prospectos extends Component
     public $fuenteFilter = '';
     public $giroFilter = '';
     public $vacantesFilter = '';
+    public $orgFilter = '';
     public $sortField = 'creado_at';
     public $sortDirection = 'desc';
     public $showDeleteConfirmModal = false;
@@ -396,12 +397,21 @@ class Prospectos extends Component
         }
     }
 
+    public function getUserOrgsProperty()
+    {
+        return Auth::user()->organizaciones;
+    }
+
     public function getFilteredQuery()
     {
         $query = Prospecto::query()->with('organizacion');
 
-        // Filtrar leads: Solo los de la organización del usuario autenticado (soporta asignación múltiple)
-        $query->whereIn('organizacion_id', $this->getUserOrgIds());
+        // Filtrar leads: Solo los de la organización del usuario autenticado (soporta asignación múltiple y filtro específico)
+        if ($this->orgFilter && in_array((int)$this->orgFilter, $this->getUserOrgIds())) {
+            $query->where('organizacion_id', $this->orgFilter);
+        } else {
+            $query->whereIn('organizacion_id', $this->getUserOrgIds());
+        }
 
         if ($this->search) {
             $term = trim($this->search);

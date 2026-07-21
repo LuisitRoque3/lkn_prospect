@@ -50,6 +50,17 @@
                        class="w-full pl-10 pr-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] placeholder-[#3d2b1f]/40 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
             </div>
             
+            @if(count($this->userOrgs) > 1)
+                <div class="space-y-1">
+                    <select wire:model.live="orgFilter" class="w-full px-4 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs font-bold text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                        <option value="">👥 Todas las organizaciones</option>
+                        @foreach($this->userOrgs as $org)
+                            <option value="{{ $org->id }}">👥 {{ $org->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+            
             <!-- Cinta de Estados -->
             <div class="flex overflow-x-auto gap-2 pb-1 -mx-4 px-4 scrollbar-none">
                 <button wire:click="$set('statusFilter', '')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $statusFilter === '' ? 'bg-[#a3583d] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
@@ -100,7 +111,7 @@
         </div>
 
         <!-- ESCRITORIO: FILTROS Y BUSCADOR -->
-        <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+        <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 {{ count($this->userOrgs) > 1 ? 'md:grid-cols-7' : 'md:grid-cols-6' }} gap-4">
             <div class="relative md:col-span-2 sm:col-span-2">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <span class="text-[#3d2b1f]/40">🔍</span>
@@ -147,6 +158,17 @@
                     @endforeach
                 </select>
             </div>
+            @if(count($this->userOrgs) > 1)
+                <div class="col-span-1">
+                    <select wire:model.live="orgFilter" 
+                            class="w-full px-4 py-3 bg-white border border-[#3d2b1f]/10 rounded-2xl text-xs text-[#3d2b1f] font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                        <option value="">Organizaciones</option>
+                        @foreach($this->userOrgs as $org)
+                            <option value="{{ $org->id }}">{{ $org->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
         </div>
 
         <div class="hidden sm:flex items-center gap-4 bg-white border border-[#3d2b1f]/5 px-4 py-3 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/80">

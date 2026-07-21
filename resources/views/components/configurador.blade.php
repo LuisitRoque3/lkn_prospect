@@ -377,7 +377,15 @@ new class extends Component
         </div>
     @endif
 
-    <div wire:poll.5s class="border-b border-[#3d2b1f]/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    @php
+        $motor = $this->getMotorStatus();
+    @endphp
+
+    @if($motor['status'] === 'ejecutando')
+        <div wire:poll.5s></div>
+    @endif
+
+    <div class="border-b border-[#3d2b1f]/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h2 class="text-lg font-black uppercase tracking-tight text-[#3d2b1f]">
                 ⚙️ Panel de Control de Administración
@@ -389,9 +397,6 @@ new class extends Component
         
         <!-- Botón Disparar Motor y Alerta de Estado -->
         <div class="flex items-center gap-2.5 bg-[#fdfaf6] border border-[#3d2b1f]/10 p-2.5 rounded-2xl shadow-sm self-start sm:self-center">
-            @php
-                $motor = $this->getMotorStatus();
-            @endphp
             <div class="flex flex-col text-right">
                 <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/40">Estado del Extractor</span>
                 @if($motor['status'] === 'ejecutando')
