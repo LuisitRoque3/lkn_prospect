@@ -21,6 +21,8 @@ class Prospectos extends Component
     public $vacantesFilter = '';
     public $sortField = 'creado_at';
     public $sortDirection = 'desc';
+    public $showDeleteConfirmModal = false;
+    public $deleteCount = 0;
 
     // Propiedades optimizadas para evitar consultas repetitivas
     public $girosDisponibles = [];
@@ -58,6 +60,15 @@ class Prospectos extends Component
         'estado_contacto' => 'required|in:pendiente,enviado,respondido,descartado',
         'priority' => 'required|in:alfa,bravo,charlie',
     ];
+
+    public function getUserOrgIds()
+    {
+        $ids = Auth::user()->organizaciones->pluck('id')->toArray();
+        if (empty($ids) && Auth::user()->organizacion_id) {
+            $ids = [Auth::user()->organizacion_id];
+        }
+        return $ids;
+    }
 
     public function updatingSearch()
     {
@@ -111,7 +122,7 @@ class Prospectos extends Component
     public function edit($id)
     {
         $this->resetErrorBag();
-        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->findOrFail($id);
+        $prospecto = Prospecto::whereIn('organizacion_id', $this->getUserOrgIds())->findOrFail($id);
         
         $this->prospectoId = $prospecto->id;
         $this->empresa = $prospecto->empresa;
@@ -160,14 +171,17 @@ class Prospectos extends Component
     public function cargarGirosDisponibles()
     {
         try {
-            $orgId = Auth::user()->organizacion_id;
+            $orgIds = $this->getUserOrgIds();
+            sort($orgIds);
+            $cacheKey = "giros_disponibles_orgs_" . implode('_', $orgIds);
+
             // Almacenar en caché por 1 hora (3600 segundos) para evitar costosos table scans
             $this->girosDisponibles = \Illuminate\Support\Facades\Cache::remember(
-                "giros_disponibles_org_" . ($orgId ?? 'null'), 
+                $cacheKey, 
                 3600, 
-                function() use ($orgId) {
+                function() use ($orgIds) {
                     return \Illuminate\Support\Facades\DB::table('prospectos_scrapping')
-                        ->where('organizacion_id', $orgId)
+                        ->whereIn('organizacion_id', $orgIds)
                         ->whereNotNull('giro_negocio')
                         ->where('giro_negocio', '!=', '')
                         ->distinct()
@@ -299,8 +313,11 @@ class Prospectos extends Component
     {
         $this->validate();
 
+        $orgIds = $this->getUserOrgIds();
+        $defaultOrgId = $orgIds[0] ?? null;
+
         if ($this->prospectoId) {
-            $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->findOrFail($this->prospectoId);
+            $prospecto = Prospecto::whereIn('organizacion_id', $orgIds)->findOrFail($this->prospectoId);
             $prospecto->update([
                 'empresa' => $this->empresa,
                 'ubicacion_local' => $this->ubicacion_local,
@@ -324,12 +341,16 @@ class Prospectos extends Component
                 'priority' => $this->priority,
                 'tracking_uuid' => $uuid,
                 'user_id' => Auth::id(),
-                'organizacion_id' => Auth::user()->organizacion_id,
+                'organizacion_id' => $defaultOrgId,
             ]);
             session()->flash('message', 'Prospecto creado exitosamente.');
         }
 
-        \Illuminate\Support\Facades\Cache::forget("giros_disponibles_org_" . (Auth::user()->organizacion_id ?? 'null'));
+        foreach ($orgIds as $orgId) {
+            \Illuminate\Support\Facades\Cache::forget("giros_disponibles_org_" . ($orgId ?? 'null'));
+        }
+        sort($orgIds);
+        \Illuminate\Support\Facades\Cache::forget("giros_disponibles_orgs_" . implode('_', $orgIds));
         $this->cargarGirosDisponibles(); // Recargar si se creó nuevo giro
         $this->showCreateModal = false;
         $this->reset(['prospectoId', 'empresa', 'ubicacion_local', 'director_nombre', 'correo_corporativo', 'telefono_whatsapp', 'estado_contacto', 'priority']);
@@ -337,7 +358,7 @@ class Prospectos extends Component
 
     public function updateStatus($id, $status)
     {
-        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
+        $prospecto = Prospecto::whereIn('organizacion_id', $this->getUserOrgIds())->find($id);
         if ($prospecto) {
             $prospecto->estado_contacto = $status;
             $prospecto->save();
@@ -346,7 +367,7 @@ class Prospectos extends Component
 
     public function updatePriority($id, $priority)
     {
-        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
+        $prospecto = Prospecto::whereIn('organizacion_id', $this->getUserOrgIds())->find($id);
         if ($prospecto) {
             $prospecto->priority = $priority;
             $prospecto->save();
@@ -355,7 +376,7 @@ class Prospectos extends Component
 
     public function sendColdEmail($id)
     {
-        $prospecto = Prospecto::where('organizacion_id', Auth::user()->organizacion_id)->find($id);
+        $prospecto = Prospecto::whereIn('organizacion_id', $this->getUserOrgIds())->find($id);
         if ($prospecto && $prospecto->correo_corporativo) {
             // Generar UUID si es un prospecto viejo que no lo tiene
             if (!$prospecto->tracking_uuid) {
@@ -375,18 +396,23 @@ class Prospectos extends Component
         }
     }
 
-    public function render()
+    public function getFilteredQuery()
     {
         $query = Prospecto::query();
 
-        // Filtrar leads: Solo los de la organización del usuario autenticado
-        $query->where('organizacion_id', Auth::user()->organizacion_id);
+        // Filtrar leads: Solo los de la organización del usuario autenticado (soporta asignación múltiple)
+        $query->whereIn('organizacion_id', $this->getUserOrgIds());
 
         if ($this->search) {
-            $query->where(function($q) {
-                $q->where('empresa', 'like', '%' . $this->search . '%')
-                  ->orWhere('director_nombre', 'like', '%' . $this->search . '%');
-            });
+            $term = trim($this->search);
+            if (strlen($term) >= 3) {
+                $query->whereRaw("MATCH(empresa, director_nombre) AGAINST(? IN BOOLEAN MODE)", [$term . '*']);
+            } else {
+                $query->where(function($q) use ($term) {
+                    $q->where('empresa', 'like', '%' . $term . '%')
+                      ->orWhere('director_nombre', 'like', '%' . $term . '%');
+                });
+            }
         }
 
         if ($this->statusFilter) {
@@ -409,8 +435,49 @@ class Prospectos extends Component
             $query->where('vacantes_activas', $this->vacantesFilter);
         }
 
+        return $query;
+    }
+
+    public function abrirConfirmarMasiva()
+    {
+        $this->deleteCount = $this->getFilteredQuery()->count();
+        if ($this->deleteCount > 0) {
+            $this->showDeleteConfirmModal = true;
+        } else {
+            session()->flash('error', 'No hay prospectos que coincidan con los filtros seleccionados.');
+        }
+    }
+
+    public function cerrarConfirmarMasiva()
+    {
+        $this->showDeleteConfirmModal = false;
+    }
+
+    public function ejecutarEliminacionMasiva()
+    {
+        $count = $this->getFilteredQuery()->count();
+        if ($count > 0) {
+            $this->getFilteredQuery()->delete();
+            session()->flash('message', "Se eliminaron {$count} prospectos masivamente.");
+        }
+
+        $this->showDeleteConfirmModal = false;
+        
+        // Limpiar caché
+        $orgIds = $this->getUserOrgIds();
+        foreach ($orgIds as $orgId) {
+            \Illuminate\Support\Facades\Cache::forget("giros_disponibles_org_" . ($orgId ?? 'null'));
+        }
+        sort($orgIds);
+        \Illuminate\Support\Facades\Cache::forget("giros_disponibles_orgs_" . implode('_', $orgIds));
+        
+        $this->cargarGirosDisponibles();
+    }
+
+    public function render()
+    {
         return view('livewire.prospectos', [
-            'prospectos' => $query->orderBy($this->sortField, $this->sortDirection)->paginate(15),
+            'prospectos' => $this->getFilteredQuery()->orderBy($this->sortField, $this->sortDirection)->paginate(15),
             'girosDisponibles' => $this->girosDisponibles
         ]);
     }

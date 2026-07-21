@@ -17,6 +17,9 @@ new class extends Component
     public $customGiros = [];
     public $customCiudades = [];
 
+    // Tarea que se está editando
+    public $editingConfigId = null;
+
     // Pestaña Interna activa: 'extractor', 'organizaciones', 'usuarios'
     public $currentSection = 'extractor';
 
@@ -25,7 +28,7 @@ new class extends Component
     
     // Propiedades para Asignación de Usuarios
     public $userToAssign = '';
-    public $orgToAssign = '';
+    public $orgsToAssign = [];
 
     // Catálogo Base estático
     public $listaCiudades = [
@@ -149,6 +152,23 @@ new class extends Component
     // ==========================================
     // SECCIÓN A: TAREAS DE EXTRACCIÓN (CRON)
     // ==========================================
+    public function editarTarea($id)
+    {
+        abort_unless(Auth::user()->is_admin, 403);
+        $config = DB::table('configuraciones_extraccion')->where('id', $id)->first();
+        if ($config) {
+            $this->editingConfigId = $id;
+            $this->selectedGiros = json_decode($config->giro, true) ?: [$config->giro];
+            $this->selectedCiudades = json_decode($config->ciudad, true) ?: [$config->ciudad];
+            $this->selected_org_id = $config->organizacion_id;
+        }
+    }
+
+    public function cancelarEdicionTarea()
+    {
+        $this->reset(['editingConfigId', 'selectedGiros', 'selectedCiudades', 'selected_org_id', 'customGiros', 'customCiudades']);
+    }
+
     public function agregar()
     {
         abort_unless(Auth::user()->is_admin, 403);
@@ -159,18 +179,30 @@ new class extends Component
             'selected_org_id' => 'required|exists:organizaciones,id',
         ]);
 
-        DB::table('configuraciones_extraccion')->insert([
-            'user_id' => Auth::id(), // Creador
-            'organizacion_id' => $this->selected_org_id, // Organización asignada
-            'giro' => json_encode($this->selectedGiros),
-            'ciudad' => json_encode($this->selectedCiudades),
-            'estado' => true,
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+        if ($this->editingConfigId) {
+            DB::table('configuraciones_extraccion')
+                ->where('id', $this->editingConfigId)
+                ->update([
+                    'organizacion_id' => $this->selected_org_id,
+                    'giro' => json_encode(array_values($this->selectedGiros)),
+                    'ciudad' => json_encode(array_values($this->selectedCiudades)),
+                    'updated_at' => now()
+                ]);
+            session()->flash('message', 'Tarea de extracción actualizada con éxito.');
+        } else {
+            DB::table('configuraciones_extraccion')->insert([
+                'user_id' => Auth::id(), // Creador
+                'organizacion_id' => $this->selected_org_id, // Organización asignada
+                'giro' => json_encode(array_values($this->selectedGiros)),
+                'ciudad' => json_encode(array_values($this->selectedCiudades)),
+                'estado' => true,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            session()->flash('message', 'Tarea programada asignada con éxito a la organización.');
+        }
 
-        $this->reset(['selectedGiros', 'selectedCiudades', 'selected_org_id', 'customGiros', 'customCiudades']);
-        session()->flash('message', 'Tarea programada asignada con éxito a la organización.');
+        $this->cancelarEdicionTarea();
     }
 
     public function toggleEstado($id)
@@ -189,6 +221,9 @@ new class extends Component
     {
         abort_unless(Auth::user()->is_admin, 403);
         DB::table('configuraciones_extraccion')->where('id', $id)->delete();
+        if ($this->editingConfigId == $id) {
+            $this->cancelarEdicionTarea();
+        }
         session()->flash('message', 'Tarea programada eliminada.');
     }
 
@@ -236,32 +271,64 @@ new class extends Component
     // ==========================================
     // SECCIÓN C: ASIGNACIÓN DE USUARIOS
     // ==========================================
+    public function updatedUserToAssign($value)
+    {
+        if ($value) {
+            $this->orgsToAssign = DB::table('organizacion_user')
+                ->where('user_id', $value)
+                ->pluck('organizacion_id')
+                ->map(fn($id) => (string)$id)
+                ->toArray();
+        } else {
+            $this->orgsToAssign = [];
+        }
+    }
+
     public function asignarUsuario()
     {
         abort_unless(Auth::user()->is_admin, 403);
         $this->validate([
             'userToAssign' => 'required|exists:users,id',
-            'orgToAssign' => 'nullable|exists:organizaciones,id',
+            'orgsToAssign' => 'array',
+            'orgsToAssign.*' => 'exists:organizaciones,id',
         ]);
 
+        // Eliminar relaciones anteriores
+        DB::table('organizacion_user')->where('user_id', $this->userToAssign)->delete();
+
+        // Crear nuevas relaciones
+        foreach ($this->orgsToAssign as $orgId) {
+            DB::table('organizacion_user')->insert([
+                'user_id' => $this->userToAssign,
+                'organizacion_id' => $orgId,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+
+        // Para compatibilidad hacia atrás, actualizamos la columna organizacion_id en users
         DB::table('users')
             ->where('id', $this->userToAssign)
             ->update([
-                'organizacion_id' => $this->orgToAssign ?: null,
+                'organizacion_id' => $this->orgsToAssign[0] ?? null,
                 'updated_at' => now()
             ]);
 
-        $this->reset(['userToAssign', 'orgToAssign']);
-        session()->flash('message_users', 'Relación de usuario actualizada.');
+        $this->reset(['userToAssign', 'orgsToAssign']);
+        session()->flash('message_users', 'Relaciones de usuario y organizaciones actualizadas.');
     }
 
     public function getUsersList()
     {
-        return DB::table('users')
-            ->leftJoin('organizaciones', 'users.organizacion_id', '=', 'organizaciones.id')
-            ->select('users.*', 'organizaciones.nombre as org_name')
-            ->orderBy('users.name', 'asc')
-            ->get();
+        $users = DB::table('users')->orderBy('name', 'asc')->get();
+        foreach ($users as $u) {
+            $u->orgs = DB::table('organizacion_user')
+                ->join('organizaciones', 'organizacion_user.organizacion_id', '=', 'organizaciones.id')
+                ->where('organizacion_user.user_id', $u->id)
+                ->pluck('organizaciones.nombre')
+                ->toArray();
+        }
+        return $users;
     }
 };
 ?>
@@ -374,9 +441,20 @@ new class extends Component
                     </div>
 
                     <div>
-                        <button type="submit" class="w-full py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95">
-                            + Programar Tarea Múltiple
-                        </button>
+                        @if($editingConfigId)
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95">
+                                    💾 Guardar Cambios
+                                </button>
+                                <button type="button" wire:click="cancelarEdicionTarea" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-black uppercase tracking-wider rounded-xl transition-all">
+                                    Cancelar
+                                </button>
+                            </div>
+                        @else
+                            <button type="submit" class="w-full py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95">
+                                + Programar Tarea Múltiple
+                            </button>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -413,10 +491,15 @@ new class extends Component
                                 <p class="font-semibold">Grupo Destino: <span class="font-black text-[#3d2b1f]">{{ $c->org_name }}</span></p>
                             </div>
                             <div class="flex justify-between items-center pt-2">
-                                <button wire:click="toggleEstado({{ $c->id }})" class="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border transition-all active:scale-95
-                                    {{ $c->estado ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100' }}">
-                                    {{ $c->estado ? 'Activo' : 'Pausado' }}
-                                </button>
+                                <div class="flex gap-2">
+                                    <button wire:click="toggleEstado({{ $c->id }})" class="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border transition-all active:scale-95
+                                        {{ $c->estado ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100' }}">
+                                        {{ $c->estado ? 'Activo' : 'Pausado' }}
+                                    </button>
+                                    <button wire:click="editarTarea({{ $c->id }})" class="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border border-blue-200 bg-blue-50 text-blue-700 transition-all active:scale-95">
+                                        ✏️ Editar
+                                    </button>
+                                </div>
                                 <button wire:click="eliminar({{ $c->id }})" class="text-red-500 hover:text-red-700 text-[10px] font-black uppercase tracking-wider active:scale-95">
                                     🗑️ Eliminar
                                 </button>
@@ -471,7 +554,10 @@ new class extends Component
                                             {{ $c->estado ? 'Activo' : 'Pausado' }}
                                         </button>
                                     </td>
-                                    <td class="p-3 text-center">
+                                    <td class="p-3 text-center space-x-2">
+                                        <button wire:click="editarTarea({{ $c->id }})" class="text-blue-600 hover:text-blue-800 font-bold active:scale-95">
+                                            ✏️ Editar
+                                        </button>
                                         <button wire:click="eliminar({{ $c->id }})" class="text-red-500 hover:text-red-700 font-bold active:scale-95">
                                             🗑️ Borrar
                                         </button>
@@ -570,12 +656,12 @@ new class extends Component
             @endif
 
             <!-- Formulario de Asignación -->
-            <form wire:submit="asignarUsuario" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
+            <form wire:submit.prevent="asignarUsuario" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
                 <div>
                     <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
                         Seleccionar Usuario
                     </label>
-                    <select wire:model="userToAssign" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+                    <select wire:model.live="userToAssign" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
                         <option value="">Selecciona usuario...</option>
                         @foreach($this->getUsersList() as $u)
                             <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
@@ -586,15 +672,17 @@ new class extends Component
 
                 <div>
                     <label class="block text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/70 mb-1.5">
-                        Asociar al Grupo / Org
+                        Asociar a Grupos / Orgs (Asignación Múltiple)
                     </label>
-                    <select wire:model="orgToAssign" class="w-full px-3 py-2.5 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
-                        <option value="">Ninguna (Quitar de grupo)</option>
+                    <div class="border border-[#3d2b1f]/10 rounded-xl p-3 bg-white max-h-40 overflow-y-auto space-y-2">
                         @foreach($this->getOrganizaciones() as $org)
-                            <option value="{{ $org->id }}">{{ $org->nombre }}</option>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs w-full">
+                                <input type="checkbox" value="{{ $org->id }}" wire:model="orgsToAssign" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
+                                <span class="uppercase font-bold text-[#3d2b1f]/85">{{ $org->nombre }}</span>
+                            </label>
                         @endforeach
-                    </select>
-                    @error('orgToAssign') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
+                    </div>
+                    @error('orgsToAssign') <span class="text-[10px] text-red-600 font-bold">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
@@ -626,10 +714,14 @@ new class extends Component
                                         <div class="text-[9px] font-mono text-gray-500">{{ $u->email }}</div>
                                     </td>
                                     <td class="p-3">
-                                        @if($u->org_name)
-                                            <span class="inline-block px-2.5 py-1 bg-amber-50 border border-amber-100 text-[#a3583d] text-[10px] font-black uppercase tracking-wider rounded-lg">
-                                                {{ $u->org_name }}
-                                            </span>
+                                        @if(!empty($u->orgs))
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($u->orgs as $orgName)
+                                                    <span class="inline-block px-2.5 py-1 bg-amber-50 border border-amber-100 text-[#a3583d] text-[10px] font-black uppercase tracking-wider rounded-lg">
+                                                        {{ $orgName }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         @else
                                             <span class="text-gray-400 font-medium">Sin organización asignada</span>
                                         @endif

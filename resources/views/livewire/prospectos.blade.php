@@ -30,6 +30,13 @@
             </div>
         @endif
 
+        @if (session()->has('error'))
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-xs rounded-r-xl flex justify-between items-center shadow-sm">
+                <span class="font-bold">{{ session('error') }}</span>
+                <button type="button" class="text-red-800 font-bold hover:underline" onclick="this.parentElement.remove()">✕</button>
+            </div>
+        @endif
+
         <!-- MÓVIL: FILTROS TÁCTILES HORIZONTALES (MOBILE-FIRST) -->
         <div class="sm:hidden space-y-3">
             <!-- Buscador -->
@@ -69,7 +76,7 @@
                     🔥 Contratando
                 </button>
                 <!-- Chip Sin Vacantes -->
-                <button wire:click="$set('vacantesFilter', $vacantesFilter === '0' ? '' : '0')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $vacantesFilter === '0' ? 'bg-slate-600 text-white border-transparent' : 'bg-white text-slate-700 border-slate-200' }}">
+                <button wire:click="$set('vacantesFilter', $vacantesFilter === '0' ? '' : '0')" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 whitespace-nowrap {{ $vacantesFilter === '0' ? 'bg-[#3d2b1f] text-white border-transparent' : 'bg-white text-[#3d2b1f]/70 border-[#3d2b1f]/10' }}">
                     🚫 Sin vacantes
                 </button>
                 <!-- Chips Prioridades -->
@@ -156,6 +163,18 @@
                 <input type="radio" name="vacantesFilter" value="0" wire:model.live="vacantesFilter" class="text-[#a3583d] focus:ring-[#a3583d]/20">
                 <span>Sin vacantes</span>
             </label>
+        </div>
+
+        <!-- CONTEO Y ACCIONES MASIVAS -->
+        <div class="flex justify-between items-center bg-white border border-[#3d2b1f]/10 p-3.5 rounded-2xl shadow-sm text-xs font-bold text-[#3d2b1f]/70">
+            <span class="text-[#3d2b1f]/60 font-black uppercase tracking-wider text-[10px]">
+                Total: <span class="text-[#3d2b1f]">{{ $prospectos->total() }}</span> Prospectos
+            </span>
+            @if($search || $statusFilter || $priorityFilter || $fuenteFilter || $giroFilter || $vacantesFilter !== '')
+                <button wire:click="abrirConfirmarMasiva" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl text-[9px] font-black uppercase tracking-wider text-red-600 hover:bg-red-100 transition-all active:scale-95">
+                    🚨 Eliminar Filtrados
+                </button>
+            @endif
         </div>
 
         <!-- MÓVIL: CONTROLES DE ORDENAMIENTO -->
@@ -667,6 +686,51 @@
                         @endif
                     </div>
 
+                </div>
+            </div>
+            @endteleport
+        @endif
+
+        <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN MASIVA -->
+        @if($showDeleteConfirmModal)
+            @teleport('body')
+            <div class="fixed inset-0 bg-[#3d2b1f]/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl p-6 max-w-sm w-full border border-[#3d2b1f]/10 shadow-2xl relative">
+                    <div class="text-center space-y-4">
+                        <div class="text-4xl">⚠️</div>
+                        <h3 class="text-base font-black uppercase tracking-tight text-red-600 leading-tight">
+                            Confirmar Eliminación Masiva
+                        </h3>
+                        <p class="text-xs text-[#3d2b1f]/80 leading-relaxed font-semibold">
+                            Estás a punto de eliminar permanentemente <span class="font-black text-red-600 text-sm bg-red-50 px-2 py-0.5 rounded-md">{{ $deleteCount }}</span> prospectos que coinciden con los filtros de búsqueda actuales.
+                        </p>
+                        
+                        <div class="bg-[#fdfaf6] p-3 rounded-xl border border-[#3d2b1f]/5 text-left text-[10px] space-y-1 text-gray-600 font-mono">
+                            <p class="font-bold text-[#3d2b1f]">Filtros Activos:</p>
+                            @if($search) <p>• Búsqueda: "{{ $search }}"</p> @endif
+                            @if($statusFilter) <p>• Estado: {{ strtoupper($statusFilter) }}</p> @endif
+                            @if($priorityFilter) <p>• Prioridad: {{ strtoupper($priorityFilter) }}</p> @endif
+                            @if($fuenteFilter) <p>• Fuente: {{ strtoupper($fuenteFilter) }}</p> @endif
+                            @if($giroFilter) <p>• Giro: "{{ $giroFilter }}"</p> @endif
+                            @if($vacantesFilter !== '') <p>• Vacantes: {{ $vacantesFilter === '1' ? 'CONTRATANDO' : 'SIN VACANTES' }}</p> @endif
+                        </div>
+
+                        <p class="text-[10px] text-red-500 font-bold uppercase tracking-wider">
+                            ⚠️ Esta acción no se puede deshacer.
+                        </p>
+
+                        <!-- Acciones -->
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" wire:click="cerrarConfirmarMasiva" 
+                                    class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                Cancelar
+                            </button>
+                            <button type="button" wire:click="ejecutarEliminacionMasiva" 
+                                    class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md">
+                                Sí, Eliminar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             @endteleport
