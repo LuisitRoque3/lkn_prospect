@@ -14,6 +14,20 @@ from extractor_inteligente import motor_google_places, persistir_leads
 from extractor_empleos import motor_empleos_y_enriquecimiento
 from extractor_denue import motor_denue_y_enriquecimiento
 
+def actualizar_estado_motor(estado):
+    try:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        storage_dir = os.path.join(base_dir, 'storage', 'app')
+        if not os.path.exists(storage_dir):
+            os.makedirs(storage_dir)
+        status_file = os.path.join(storage_dir, 'motor_status.txt')
+        import datetime
+        now_str = datetime.datetime.now().isoformat()
+        with open(status_file, 'w') as f:
+            f.write(f"{estado}|{now_str}")
+    except Exception as e:
+        print(f"[-] Error al actualizar estado del motor: {e}")
+
 def obtener_configuraciones_activas():
     """
     Obtiene las tareas de extracción activas configuradas por las organizaciones desde la BD.
@@ -97,38 +111,42 @@ def parse_param(param_str, fallback_catalog):
         return [str(param_str)]
 
 def main():
-    # Soporte para argumentos manuales: python orquestador.py "giro" "ciudad"
-    if len(sys.argv) > 2:
-        giro_arg = sys.argv[1]
-        ciudad_arg = sys.argv[2]
-        ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, organizacion_id=None)
-        return
+    actualizar_estado_motor("ejecutando")
+    try:
+        # Soporte para argumentos manuales: python orquestador.py "giro" "ciudad"
+        if len(sys.argv) > 2:
+            giro_arg = sys.argv[1]
+            ciudad_arg = sys.argv[2]
+            ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, organizacion_id=None)
+            return
 
-    # Consultar tareas programadas por organizaciones en la base de datos
-    tareas_activas = obtener_configuraciones_activas()
-    
-    if tareas_activas:
-        print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas.")
-        for tarea in tareas_activas:
-            # Decodificar giros y ciudades (soporta múltiples en JSON o texto simple antiguo)
-            giros_disponibles = parse_param(tarea['giro'], GIROS)
-            ciudades_disponibles = parse_param(tarea['ciudad'], CIUDADES)
-            
-            # Elegir aleatoriamente uno de cada lista configurada para ESTA tarea
-            giro_elegido = random.choice(giros_disponibles)
-            ciudad_elegida = random.choice(ciudades_disponibles)
-            
-            ejecutar_extraccion_para_combinacion(
-                giro=giro_elegido, 
-                ciudad=ciudad_elegida, 
-                organizacion_id=tarea['organizacion_id']
-            )
-    else:
-        # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo completo
-        print("[*] No hay tareas activas programadas en BD. Usando fallback de catálogo aleatorio...")
-        giro_aleatorio = random.choice(GIROS)
-        ciudad_aleatoria = random.choice(CIUDADES)
-        ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, organizacion_id=None)
+        # Consultar tareas programadas por organizaciones en la base de datos
+        tareas_activas = obtener_configuraciones_activas()
+        
+        if tareas_activas:
+            print(f"[*] Se encontraron {len(tareas_activas)} tareas programadas activas.")
+            for tarea in tareas_activas:
+                # Decodificar giros y ciudades (soporta múltiples en JSON o texto simple antiguo)
+                giros_disponibles = parse_param(tarea['giro'], GIROS)
+                ciudades_disponibles = parse_param(tarea['ciudad'], CIUDADES)
+                
+                # Elegir aleatoriamente uno de cada lista configurada para ESTA tarea
+                giro_elegido = random.choice(giros_disponibles)
+                ciudad_elegida = random.choice(ciudades_disponibles)
+                
+                ejecutar_extraccion_para_combinacion(
+                    giro=giro_elegido, 
+                    ciudad=ciudad_elegida, 
+                    organizacion_id=tarea['organizacion_id']
+                )
+        else:
+            # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo completo
+            print("[*] No hay tareas activas programadas en BD. Usando fallback de catálogo aleatorio...")
+            giro_aleatorio = random.choice(GIROS)
+            ciudad_aleatoria = random.choice(CIUDADES)
+            ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, organizacion_id=None)
+    finally:
+        actualizar_estado_motor("completado")
 
 if __name__ == "__main__":
     main()

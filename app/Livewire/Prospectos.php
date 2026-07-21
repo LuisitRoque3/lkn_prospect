@@ -398,7 +398,7 @@ class Prospectos extends Component
 
     public function getFilteredQuery()
     {
-        $query = Prospecto::query();
+        $query = Prospecto::query()->with('organizacion');
 
         // Filtrar leads: Solo los de la organización del usuario autenticado (soporta asignación múltiple)
         $query->whereIn('organizacion_id', $this->getUserOrgIds());

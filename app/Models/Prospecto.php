@@ -43,4 +43,9 @@ class Prospecto extends Model
         $mensaje = "Hola, me comunico de Locknode. He analizado el crecimiento operativo de {$empresa} y me gustaría compartirles nuestro modelo de control. ¿Con quién podría rebotar esto brevemente?";
         return "https://wa.me/{$phone}?text={$mensaje}";
     }
+
+    public function organizacion()
+    {
+        return $this->belongsTo(Organizacion::class, 'organizacion_id');
+    }
 }

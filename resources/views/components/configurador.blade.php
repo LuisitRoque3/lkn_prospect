@@ -330,17 +330,90 @@ new class extends Component
         }
         return $users;
     }
+
+    public function dispararMotor()
+    {
+        abort_unless(Auth::user()->is_admin, 403);
+        
+        $statusInfo = $this->getMotorStatus();
+        if ($statusInfo['status'] === 'ejecutando') {
+            session()->flash('message_motor', 'El motor ya se encuentra en ejecución.');
+            return;
+        }
+
+        // Crear/Escribir estado inicial
+        $path = storage_path('app/motor_status.txt');
+        file_put_contents($path, "ejecutando|" . now()->toIso8601String());
+
+        // Ejecutar script en background
+        $scriptPath = base_path('scripts/orquestador.py');
+        $cmd = "python3 " . escapeshellarg($scriptPath) . " > /dev/null 2>&1 &";
+        shell_exec($cmd);
+
+        session()->flash('message_motor', 'Motor de extracción iniciado en segundo plano.');
+    }
+
+    public function getMotorStatus()
+    {
+        $path = storage_path('app/motor_status.txt');
+        if (!file_exists($path)) {
+            return ['status' => 'idle', 'time' => null];
+        }
+        $content = file_get_contents($path);
+        $parts = explode('|', $content);
+        return [
+            'status' => $parts[0] ?? 'idle',
+            'time' => $parts[1] ?? null
+        ];
+    }
 };
 ?>
 
 <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-4 sm:p-6 shadow-sm space-y-6">
-    <div class="border-b border-[#3d2b1f]/10 pb-4">
-        <h2 class="text-lg font-black uppercase tracking-tight text-[#3d2b1f]">
-            ⚙️ Panel de Control de Administración
-        </h2>
-        <p class="text-xs text-[#3d2b1f]/60 font-medium mt-1">
-            Gestión B2B: Administra organizaciones, asigna usuarios a grupos y programa tareas automáticas de extracción.
-        </p>
+    @if (session()->has('message_motor'))
+        <div class="p-4 bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 text-xs rounded-r-xl flex justify-between items-center shadow-sm">
+            <span class="font-bold">{{ session('message_motor') }}</span>
+            <button type="button" class="text-emerald-800 font-bold hover:underline" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    @endif
+
+    <div wire:poll.5s class="border-b border-[#3d2b1f]/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-black uppercase tracking-tight text-[#3d2b1f]">
+                ⚙️ Panel de Control de Administración
+            </h2>
+            <p class="text-xs text-[#3d2b1f]/60 font-medium mt-1">
+                Gestión B2B: Administra organizaciones, asigna usuarios a grupos y programa tareas automáticas de extracción.
+            </p>
+        </div>
+        
+        <!-- Botón Disparar Motor y Alerta de Estado -->
+        <div class="flex items-center gap-2.5 bg-[#fdfaf6] border border-[#3d2b1f]/10 p-2.5 rounded-2xl shadow-sm self-start sm:self-center">
+            @php
+                $motor = $this->getMotorStatus();
+            @endphp
+            <div class="flex flex-col text-right">
+                <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/40">Estado del Extractor</span>
+                @if($motor['status'] === 'ejecutando')
+                    <span class="text-[9px] font-black text-emerald-600 uppercase flex items-center justify-end gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span>
+                        Ejecutando
+                    </span>
+                @else
+                    <span class="text-[9px] font-black text-gray-500 uppercase">Detenido (Idle)</span>
+                @endif
+            </div>
+
+            @if($motor['status'] === 'ejecutando')
+                <button disabled class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed flex items-center gap-1">
+                    ⏳ Procesando...
+                </button>
+            @else
+                <button wire:click="dispararMotor" class="px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#a3583d] text-white hover:bg-[#8f4730] transition-all active:scale-95 flex items-center gap-1 shadow-sm">
+                    🚀 Disparar Motor
+                </button>
+            @endif
+        </div>
     </div>
 
     <!-- SUB-MENÚ DE PESTAÑAS INTERNAS -->

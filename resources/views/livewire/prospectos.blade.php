@@ -8,7 +8,7 @@
                     Locknode CRM
                 </span>
                 <h1 class="text-3xl font-black uppercase tracking-tight text-[#3d2b1f]">
-                    Panel de Nuevos Invitados
+                    Directorio
                 </h1>
                 <p class="text-xs text-[#3d2b1f]/60 font-medium">Gestiona tu prospección corporativa y local.</p>
             </div>
@@ -217,6 +217,11 @@
                                         🔥 Contratando
                                     </span>
                                 @endif
+                                @if($prospecto->organizacion)
+                                    <span class="inline-block px-2 py-0.5 bg-[#a3583d]/10 text-[#a3583d] text-[8px] font-black uppercase tracking-wider rounded-md border border-[#a3583d]/20">
+                                        👥 {{ $prospecto->organizacion->nombre }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-1">
@@ -362,6 +367,11 @@
                                             @if($prospecto->vacantes_activas)
                                                 <span class="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[8px] font-black uppercase tracking-wider rounded border border-emerald-100 animate-pulse" title="Buscando personal: {{ $prospecto->puestos_buscados }}">
                                                     🔥 Contratando
+                                                </span>
+                                            @endif
+                                            @if($prospecto->organizacion)
+                                                <span class="inline-block px-1.5 py-0.5 bg-[#a3583d]/10 text-[#a3583d] text-[8px] font-black uppercase tracking-wider rounded border border-[#a3583d]/20">
+                                                    👥 {{ $prospecto->organizacion->nombre }}
                                                 </span>
                                             @endif
                                         </div>
