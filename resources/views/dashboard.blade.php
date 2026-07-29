@@ -80,7 +80,7 @@
     </nav>
 
     <!-- MAIN BODY -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-6">
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 pb-32 sm:pb-6">
         
         <!-- Prospectos (CRM) Tab -->
         <div x-show="activeTab === 'leads'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
@@ -96,8 +96,8 @@
 
     </main>
 
-    <!-- BOTTOM TAB BAR (MOBILE-FIRST) -->
-    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-3xl flex justify-around p-3"
+    <!-- BOTTOM TAB BAR (MOBILE-FIRST) - YOUTUBE 2026 STYLE -->
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex justify-around p-2"
          x-show="!isKeyboardOpen"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-4"
@@ -107,14 +107,14 @@
          x-transition:leave-end="opacity-0 translate-y-4">
         <button @click="activeTab = 'leads'"
                 :class="activeTab === 'leads' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
-                class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1 flex-1">
+                class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1.5 flex-1">
             <span class="text-xl">📊</span>
             <span class="text-[9px] uppercase tracking-wider">Leads</span>
         </button>
         @if(auth()->user()->is_admin)
             <button @click="activeTab = 'config'"
                     :class="activeTab === 'config' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
-                    class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1 flex-1">
+                    class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1.5 flex-1">
                 <span class="text-xl">⚙️</span>
                 <span class="text-[9px] uppercase tracking-wider">Configurar</span>
             </button>

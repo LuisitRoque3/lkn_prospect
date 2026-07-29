@@ -13,9 +13,6 @@ GOOGLE_PLACES_API_KEY = 'AIzaSyBfm6IRK4y3sSEIzDN5Me-S67W2JCvyw0Y'
 JOOBLE_API_KEY = '' # El usuario la puede rellenar o usar fallback sin API de pago
 DENUE_API_TOKEN = '644cb744-9d96-47bb-a8ab-1dceddd73850' # Token privado del usuario
 
-# Credenciales para validador de WhatsApp (RapidAPI)
-RAPIDAPI_KEY = '073c531aa5mshf59ceba3ec837a5p1f5a8djsn8fdaa7104da0'
-RAPIDAPI_HOST = 'whatsapp-number-validator3.p.rapidapi.com'
 
 # Catálogo de Giros a Mapear
 GIROS = [

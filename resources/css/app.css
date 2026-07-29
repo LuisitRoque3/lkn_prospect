@@ -23,3 +23,13 @@
     }
 }
 
+/* Utilidades para Safe Areas de dispositivos móviles */
+@utility pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility bottom-safe {
+    bottom: env(safe-area-inset-bottom);
+}
+
+
