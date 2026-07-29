@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-[#fdfaf6] text-[#3d2b1f] antialiased min-h-screen pb-safe" 
+<body class="bg-[#fdfaf6] text-[#3d2b1f] antialiased min-h-dvh pb-safe" 
       x-data="{ 
           activeTab: 'leads', 
           isKeyboardOpen: false, 

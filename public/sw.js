@@ -1,6 +1,5 @@
 const CACHE_NAME = 'locknode-crm-v1';
 const ASSETS = [
-    '/',
     '/favicon.ico'
 ];
 
