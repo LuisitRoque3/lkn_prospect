@@ -13,7 +13,7 @@
                 <p class="text-xs text-[#3d2b1f]/60 font-medium">Gestiona tu prospección corporativa y local.</p>
             </div>
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <button wire:click="openCreateModal" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                <button wire:click="openCreateModal" onclick="window.hapticPulse('light')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                     <span>+ Nuevo Prospecto</span>
                 </button>
                 <div class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-wider text-[#3d2b1f]/50 bg-white px-3 py-1.5 rounded-lg border border-[#3d2b1f]/10 shadow-sm">
@@ -248,6 +248,7 @@
                         </div>
                         <div class="flex flex-col items-end gap-1">
                             <select wire:change="updateStatus({{ $prospecto->id }}, $event.target.value)" 
+                                    onchange="window.hapticPulse('success')"
                                     class="shrink-0 inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider cursor-pointer appearance-none text-center border focus:outline-none focus:ring-1 focus:ring-gray-300
                                     {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
                                     {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border-amber-200' : '' }}
@@ -291,6 +292,7 @@
                         <div class="grid grid-cols-4 gap-2 pt-2">
                             <!-- Botón Editar -->
                             <button wire:click="edit({{ $prospecto->id }})" 
+                                    onclick="window.hapticPulse('light')"
                                     class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl transition-all active:scale-95 group/edit">
                                 <span class="text-base group-hover/edit:scale-110 transition-transform">✏️</span>
                                 <span class="text-[9px] font-black uppercase tracking-wider">Editar</span>
@@ -299,6 +301,7 @@
                             <!-- Botón Llamar -->
                             @if($prospecto->telefono_whatsapp)
                                 <a href="tel:{{ preg_replace('/[^0-9+]/', '', $prospecto->telefono_whatsapp) }}" 
+                                   onclick="window.hapticPulse('light')"
                                    class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl transition-all active:scale-95 group/call">
                                     <span class="text-base group-hover/call:scale-110 transition-transform">📞</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Llamar</span>
@@ -313,6 +316,7 @@
                             <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
                                 <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
+                                        onclick="window.hapticPulse('light')"
                                         class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all active:scale-95 group/wa">
                                     <span class="text-base group-hover/wa:scale-110 transition-transform">💬</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">WhatsApp</span>
@@ -327,6 +331,7 @@
                             <!-- Botón Email -->
                             @if($prospecto->correo_corporativo && $prospecto->correo_corporativo !== 'N/A')
                                 <button wire:click="sendColdEmail({{ $prospecto->id }})" 
+                                        onclick="window.hapticPulse('light')"
                                         class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#a3583d]/10 hover:bg-[#a3583d]/20 border border-[#a3583d]/20 text-[#8f4730] rounded-xl transition-all active:scale-95 group/mail">
                                     <span class="text-base group-hover/mail:scale-110 transition-transform">✉️</span>
                                     <span class="text-[9px] font-black uppercase tracking-wider">Enviar Mail</span>
@@ -510,8 +515,8 @@
         <!-- MODAL DE CREACIÓN / EDICIÓN -->
         @if($showCreateModal)
             @teleport('body')
-            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity" style="z-index: 9999;">
-                <div class="bg-white border border-[#3d2b1f]/10 rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all">
+            <div class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity overflow-y-auto" style="z-index: 9999;">
+                <div class="bg-white border-t sm:border border-[#3d2b1f]/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all max-h-[85vh] overflow-y-auto pb-12 sm:pb-6">
                     
                     <!-- Modal Header -->
                     <div class="flex justify-between items-center pb-4 border-b border-[#3d2b1f]/10">
@@ -588,7 +593,7 @@
                             <button type="button" wire:click="closeCreateModal" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
                                 Cancelar
                             </button>
-                            <button type="submit" class="px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                            <button type="submit" onclick="window.hapticPulse('success')" class="px-5 py-2.5 bg-[#a3583d] hover:bg-[#8f4730] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
                                 {{ isset($prospectoId) && $prospectoId ? 'Actualizar' : 'Guardar' }} Prospecto
                             </button>
                         </div>
@@ -602,7 +607,7 @@
         @if($showWhatsappModal && $selectedProspectForWhatsapp)
             @teleport('body')
             <div class="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center p-0 sm:p-4 bg-[#3d2b1f]/40 backdrop-blur-sm transition-opacity" style="z-index: 9999;">
-                <div class="bg-white border-t sm:border border-[#3d2b1f]/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all pb-12 sm:pb-6">
+                <div class="bg-white border-t sm:border border-[#3d2b1f]/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-6 transform transition-all pb-12 sm:pb-6 max-h-[85vh] overflow-y-auto">
                     
                     <!-- Tirador táctil visual (Móvil) -->
                     <div class="sm:hidden w-12 h-1.5 bg-[#3d2b1f]/20 rounded-full mx-auto mb-2 cursor-pointer" wire:click="closeWhatsappModal"></div>
@@ -711,6 +716,7 @@
                                 <a href="https://wa.me/{{ $selectedProspectForWhatsapp->clean_phone }}?text={{ urlencode($whatsappMessage) }}" 
                                    target="_blank"
                                    wire:click="markWhatsappAsSent"
+                                   onclick="window.hapticPulse('success')"
                                    class="inline-flex items-center px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
                                     💬 Disparar WhatsApp
                                 </a>

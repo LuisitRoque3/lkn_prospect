@@ -1,0 +1,17 @@
+{
+  "name": "Locknode CRM",
+  "short_name": "Locknode CRM",
+  "description": "Gestiona tu prospección corporativa y local de forma rápida y sencilla.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdfaf6",
+  "theme_color": "#a3583d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import requests
 import mysql.connector
 from mysql.connector import Error
 from urllib.parse import urlparse
-from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, CIUDADES, GIROS
+from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, CIUDADES, GIROS, RAPIDAPI_KEY, RAPIDAPI_HOST
 
 # ==========================================
 # MOTOR DE BÚSQUEDA NACIONAL (Google Maps)
@@ -63,11 +63,61 @@ def motor_google_places(giro, ubicacion):
     print(f"[GOOGLE MAPS] Encontró {len(empresas_google)} empresas con número telefónico.")
     return empresas_google
 
+def validar_whatsapp_rapidapi(telefono):
+    """
+    Verifica de manera real si un número telefónico cuenta con WhatsApp activo usando RapidAPI.
+    """
+    if not RAPIDAPI_KEY:
+        return True
+
+    # Normalizar número (quitar no-dígitos y asegurar código de país 52)
+    num_limpio = "".join(filter(str.isdigit, telefono))
+    if not num_limpio.startswith("52") and len(num_limpio) == 10:
+        num_limpio = "52" + num_limpio
+
+    url = "https://whatsapp-number-validator3.p.rapidapi.com/WhatsappNumberHasItWithToken"
+    headers = {
+        "x-rapidapi-key": RAPIDAPI_KEY,
+        "x-rapidapi-host": RAPIDAPI_HOST,
+        "Content-Type": "application/json"
+    }
+    payload = {"phone_number": num_limpio}
+
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=12)
+        if response.status_code == 200:
+            res_data = response.json()
+            return res_data.get("status") == "valid"
+        else:
+            print(f"[-] RapidAPI código {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"[-] Error llamando a WhatsApp Validator: {e}")
+    
+    return True # Dejar pasar en caso de error técnico imprevisto de red/API
+
 # ==========================================
 # BASE DE DATOS
 # ==========================================
 def persistir_leads(leads):
     if not leads: return
+    
+    # --- FILTRAR LEADS CON WHATSAPP VÁLIDO ---
+    print(f"\n[*] Validando WhatsApp real para {len(leads)} prospectos...")
+    leads_validos = []
+    for l in leads:
+        tel = l.get('telefono_whatsapp')
+        if tel:
+            if validar_whatsapp_rapidapi(tel):
+                leads_validos.append(l)
+            else:
+                print(f"[-] Omitiendo '{l['empresa']}' (No tiene WhatsApp activo): {tel}")
+        else:
+            print(f"[-] Omitiendo '{l['empresa']}' (Sin número telefónico)")
+
+    if not leads_validos:
+        print("[BD] No quedan leads válidos después del filtro de WhatsApp.")
+        return
+        
     try:
         conexion = mysql.connector.connect(**DB_CONFIG)
         cursor = conexion.cursor()
@@ -84,7 +134,7 @@ def persistir_leads(leads):
                 l['fuente_descubrimiento'], l['vacantes_activas'], l['puestos_buscados'], 
                 l['tamano_empresa'], l['origen_detalles'], l.get('user_id'), l.get('organizacion_id')
             ) 
-            for l in leads
+            for l in leads_validos
         ]
         cursor.executemany(query, valores)
         conexion.commit()
