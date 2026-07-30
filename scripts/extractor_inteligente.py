@@ -218,7 +218,7 @@ def persistir_leads(leads):
                      url_origen = IF(VALUES(url_origen) != 'N/A' AND VALUES(url_origen) != '', VALUES(url_origen), url_origen),
                      vacantes_activas = GREATEST(vacantes_activas, VALUES(vacantes_activas)),
                      puestos_buscados = IF(VALUES(puestos_buscados) != 'N/A' AND VALUES(puestos_buscados) != '', VALUES(puestos_buscados), puestos_buscados),
-                     updated_at = NOW()"""
+                     actualizado_at = NOW()"""
         
         valores = [
             (
