@@ -218,13 +218,33 @@
                     </div>
                     
                     <!-- Fila Superior: Nombre y Estado -->
-                    <div class="flex justify-between items-start gap-2 pl-2">
-                        <div>
-                            <h3 class="text-base font-black uppercase tracking-tight text-[#3d2b1f] leading-tight">
+                    <div class="space-y-2 pl-2">
+                        <div class="flex justify-between items-start gap-3">
+                            <h3 class="text-base font-black uppercase tracking-tight text-[#3d2b1f] leading-tight flex-1">
                                 {{ $prospecto->empresa }}
                             </h3>
+                            <div class="shrink-0">
+                                <select wire:change="updateStatus({{ $prospecto->id }}, $event.target.value)" 
+                                        onchange="window.hapticPulse('success')"
+                                        class="inline-block px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider cursor-pointer appearance-none text-center border focus:outline-none focus:ring-1 focus:ring-gray-300
+                                        {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
+                                        {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border-amber-200' : '' }}
+                                        {{ $prospecto->estado_contacto == 'respondido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : '' }}
+                                        {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
+                                    ">
+                                    <option value="pendiente" {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'selected' : '' }}>🔵 Pendiente</option>
+                                    <option value="enviado" {{ $prospecto->estado_contacto == 'enviado' ? 'selected' : '' }}>🟡 Contactado</option>
+                                    <option value="respondido" {{ $prospecto->estado_contacto == 'respondido' ? 'selected' : '' }}>🟢 En Conversación</option>
+                                    <option value="descartado" {{ $prospecto->estado_contacto == 'descartado' ? 'selected' : '' }}>🔴 Descartado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dirección, Fecha y Etiquetas (Ancho Completo para Equilibrio Visual) -->
+                        <div class="w-full">
                             <p class="text-[10px] text-[#3d2b1f]/50 mt-1 uppercase tracking-wider font-semibold">📍 {{ $prospecto->ubicacion_local ?: 'Sin ubicación' }}</p>
                             <p class="text-[9px] text-[#3d2b1f]/40 font-bold uppercase mt-1">📅 {{ $prospecto->creado_at ? \Carbon\Carbon::parse($prospecto->creado_at)->translatedFormat('d M Y, h:i A') : 'N/A' }}</p>
+                            
                             <div class="flex flex-wrap gap-1 mt-2">
                                 @if($prospecto->giro_negocio)
                                     <span class="inline-block px-2 py-0.5 bg-amber-50 text-amber-800 text-[8px] font-black uppercase tracking-wider rounded-md border border-amber-100">
@@ -245,21 +265,6 @@
                                     </span>
                                 @endif
                             </div>
-                        </div>
-                        <div class="flex flex-col items-end gap-1">
-                            <select wire:change="updateStatus({{ $prospecto->id }}, $event.target.value)" 
-                                    onchange="window.hapticPulse('success')"
-                                    class="shrink-0 inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider cursor-pointer appearance-none text-center border focus:outline-none focus:ring-1 focus:ring-gray-300
-                                    {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
-                                    {{ $prospecto->estado_contacto == 'enviado' ? 'bg-amber-50 text-amber-700 border-amber-200' : '' }}
-                                    {{ $prospecto->estado_contacto == 'respondido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : '' }}
-                                    {{ $prospecto->estado_contacto == 'descartado' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
-                                ">
-                                <option value="pendiente" {{ $prospecto->estado_contacto == 'pendiente' || !$prospecto->estado_contacto ? 'selected' : '' }}>🔵 Pendiente</option>
-                                <option value="enviado" {{ $prospecto->estado_contacto == 'enviado' ? 'selected' : '' }}>🟡 Contactado</option>
-                                <option value="respondido" {{ $prospecto->estado_contacto == 'respondido' ? 'selected' : '' }}>🟢 En Conversación</option>
-                                <option value="descartado" {{ $prospecto->estado_contacto == 'descartado' ? 'selected' : '' }}>🔴 Descartado</option>
-                            </select>
                         </div>
                     </div>
 

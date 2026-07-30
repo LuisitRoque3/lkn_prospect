@@ -2,9 +2,11 @@ import os
 import time
 import random
 import requests
+import re
 import mysql.connector
 from mysql.connector import Error
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, CIUDADES, GIROS
 
 # ==========================================
@@ -85,11 +87,122 @@ def motor_google_places(giro, ubicacion):
     print(f"[GOOGLE MAPS] Encontró {len(empresas_google)} empresas con número telefónico en total ({paginas_leidas} páginas).")
     return empresas_google
 
+def enriquecer_con_mexicopymes(nombre, ubicacion):
+    """
+    Busca una empresa en mexicopymes.com y obtiene teléfono, email y sitio web adicionales de forma directa.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    # 1. Buscar en el buscador
+    search_url = f"https://www.mexicopymes.com/buscar/?q={requests.utils.quote(nombre)}"
+    try:
+        res = requests.get(search_url, headers=headers, timeout=10)
+        if res.status_code != 200:
+            return {}
+            
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        # Encontrar el primer enlace que tenga '/info/'
+        profile_url = None
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if "/info/" in href:
+                profile_url = href
+                break
+                
+        if not profile_url:
+            return {}
+            
+        # Asegurar URL absoluta
+        if not profile_url.startswith("http"):
+            profile_url = "https://mexicopymes.com" + profile_url if profile_url.startswith("/") else "https://mexicopymes.com/" + profile_url
+            
+        # Extraer el n_id del final de la URL del perfil
+        n_id = profile_url.split("-")[-1]
+        if not n_id or len(n_id) < 5:
+            return {}
+            
+        # 2. Consultar la página del perfil para el Sitio Web
+        res_profile = requests.get(profile_url, headers=headers, timeout=10)
+        web = "N/A"
+        if res_profile.status_code == 200:
+            soup_profile = BeautifulSoup(res_profile.text, 'html.parser')
+            for link in soup_profile.find_all('a', href=True):
+                href = link['href']
+                if "http" in href and "mexicopymes.com" not in href and "google.com" not in href and "waze.com" not in href and "facebook.com" not in href and "instagram.com" not in href and "linkedin.com" not in href:
+                    web = href
+                    break
+                    
+        # 3. Consultar endpoints AJAX para obtener datos reales
+        ajax_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "Accept": "application/json",
+            "Referer": profile_url
+        }
+        
+        telefono = "N/A"
+        correo = "N/A"
+        
+        # AJAX Teléfono
+        try:
+            res_tel = requests.post("https://mexicopymes.com/ajax/mostrar_numero.php", data={"n_id": n_id, "n_type": "P1"}, headers=ajax_headers, timeout=8)
+            if res_tel.status_code == 200:
+                tel_json = res_tel.json()
+                if tel_json.get("ok") and tel_json.get("value"):
+                    raw_tel = tel_json.get("value")
+                    telefono = "".join(filter(str.isdigit, raw_tel))
+                    if not telefono.startswith("52") and len(telefono) == 10:
+                        telefono = "52" + telefono
+        except Exception as e:
+            pass
+            
+        # AJAX Correo
+        try:
+            res_cor = requests.post("https://mexicopymes.com/ajax/mostrar_email.php", data={"n_id": n_id, "n_type": "E"}, headers=ajax_headers, timeout=8)
+            if res_cor.status_code == 200:
+                cor_json = res_cor.json()
+                if cor_json.get("ok") and cor_json.get("value"):
+                    correo = cor_json.get("value").strip()
+        except Exception as e:
+            pass
+            
+        return {
+            "telefono": telefono if telefono != "N/A" else None,
+            "correo": correo if correo != "N/A" else None,
+            "web": web if web != "N/A" else None
+        }
+        
+    except Exception as e:
+        print(f"[-] Error al enriquecer con MexicoPymes para '{nombre}': {e}")
+        
+    return {}
+
 # ==========================================
 # BASE DE DATOS
 # ==========================================
 def persistir_leads(leads):
     if not leads: return
+    
+    # --- ENRIQUECIMIENTO CON MEXICOPYMES ---
+    print(f"\n[*] Nutriendo {len(leads)} leads con MexicoPymes...")
+    for idx, l in enumerate(leads):
+        # Enriquecer si le falta el correo corporativo o la página web
+        if not l.get('correo_corporativo') or l.get('correo_corporativo') == 'N/A' or not l.get('url_origen') or l.get('url_origen') == 'N/A':
+            print(f" - [{idx+1}/{len(leads)}] Buscando datos para '{l['empresa']}'...")
+            extra_info = enriquecer_con_mexicopymes(l['empresa'], l['ubicacion_local'])
+            if extra_info:
+                if extra_info.get('correo') and (not l.get('correo_corporativo') or l.get('correo_corporativo') == 'N/A'):
+                    l['correo_corporativo'] = extra_info['correo']
+                    print(f"   [+] Correo corporativo encontrado: {extra_info['correo']}")
+                if extra_info.get('web') and (not l.get('url_origen') or l.get('url_origen') == 'N/A'):
+                    l['url_origen'] = urlparse(extra_info['web']).netloc.replace('www.', '') if extra_info['web'] else 'N/A'
+                    print(f"   [+] Sitio web oficial encontrado: {extra_info['web']}")
+            time.sleep(0.5) # Rate limit friendly
+            
     try:
         conexion = mysql.connector.connect(**DB_CONFIG)
         cursor = conexion.cursor()
