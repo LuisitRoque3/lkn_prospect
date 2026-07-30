@@ -293,58 +293,64 @@
                             </div>
                         </div>
 
-                        <!-- Botones de Acción (Omnicanal y Edición) -->
-                        <div class="grid grid-cols-4 gap-2 pt-2">
+                        <!-- Dock de Control / Acciones Integrado -->
+                        <div class="flex items-center justify-between bg-gray-50 border border-[#3d2b1f]/5 rounded-2xl p-1 mt-3 gap-0.5">
                             <!-- Botón Editar -->
                             <button wire:click="edit({{ $prospecto->id }})" 
                                     onclick="window.hapticPulse('light')"
-                                    class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl transition-all active:scale-95 group/edit">
-                                <span class="text-base group-hover/edit:scale-110 transition-transform">✏️</span>
-                                <span class="text-[9px] font-black uppercase tracking-wider">Editar</span>
+                                    class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-blue-600 rounded-xl transition-all active:scale-95 group/edit">
+                                <span class="text-sm group-hover/edit:scale-110 transition-transform">✏️</span>
+                                <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">Editar</span>
                             </button>
+
+                            <div class="w-px h-6 bg-[#3d2b1f]/10 shrink-0"></div>
 
                             <!-- Botón Llamar -->
                             @if($prospecto->telefono_whatsapp)
                                 <a href="tel:{{ preg_replace('/[^0-9+]/', '', $prospecto->telefono_whatsapp) }}" 
                                    onclick="window.hapticPulse('light')"
-                                   class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl transition-all active:scale-95 group/call">
-                                    <span class="text-base group-hover/call:scale-110 transition-transform">📞</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Llamar</span>
+                                   class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-gray-700 rounded-xl transition-all active:scale-95 group/call">
+                                    <span class="text-sm group-hover/call:scale-110 transition-transform">📞</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">Llamar</span>
                                 </a>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
-                                    <span class="text-base opacity-50">📞</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Sin Tel.</span>
+                                <div class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-gray-300 rounded-xl cursor-not-allowed">
+                                    <span class="text-sm opacity-40">📞</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/40 mt-0.5">Sin Tel.</span>
                                 </div>
                             @endif
+
+                            <div class="w-px h-6 bg-[#3d2b1f]/10 shrink-0"></div>
 
                             <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
                                 <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
                                         onclick="window.hapticPulse('light')"
-                                        class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#075E54] rounded-xl transition-all active:scale-95 group/wa">
-                                    <span class="text-base group-hover/wa:scale-110 transition-transform">💬</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">WhatsApp</span>
+                                        class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-green-700 rounded-xl transition-all active:scale-95 group/wa">
+                                    <span class="text-sm group-hover/wa:scale-110 transition-transform">💬</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">WhatsApp</span>
                                 </button>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
-                                    <span class="text-base opacity-50">💬</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Sin Teléfono</span>
+                                <div class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-gray-300 rounded-xl cursor-not-allowed">
+                                    <span class="text-sm opacity-40">💬</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/40 mt-0.5">Sin Tel.</span>
                                 </div>
                             @endif
 
-                            <!-- Botón Email -->
+                            <div class="w-px h-6 bg-[#3d2b1f]/10 shrink-0"></div>
+
+                            <!-- Botón Correo -->
                             @if($prospecto->correo_corporativo && $prospecto->correo_corporativo !== 'N/A')
                                 <button wire:click="sendColdEmail({{ $prospecto->id }})" 
                                         onclick="window.hapticPulse('light')"
-                                        class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-[#a3583d]/10 hover:bg-[#a3583d]/20 border border-[#a3583d]/20 text-[#8f4730] rounded-xl transition-all active:scale-95 group/mail">
-                                    <span class="text-base group-hover/mail:scale-110 transition-transform">✉️</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Enviar Mail</span>
+                                        class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-[#a3583d] rounded-xl transition-all active:scale-95 group/mail">
+                                    <span class="text-sm group-hover/mail:scale-110 transition-transform">✉️</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">Correo</span>
                                 </button>
                             @else
-                                <div class="col-span-1 flex flex-col items-center justify-center gap-1 py-3 px-1 bg-gray-50 border border-gray-100 text-gray-400 rounded-xl">
-                                    <span class="text-base opacity-50">✉️</span>
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Sin Correo</span>
+                                <div class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-gray-300 rounded-xl cursor-not-allowed">
+                                    <span class="text-sm opacity-40">✉️</span>
+                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/40 mt-0.5">Sin Corr.</span>
                                 </div>
                             @endif
                         </div>
