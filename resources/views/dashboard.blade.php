@@ -97,7 +97,7 @@
     </main>
 
     <!-- BOTTOM TAB BAR (MOBILE-FIRST) - LOCKSPEND STYLE -->
-    <div class="sm:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-50 bg-white border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex justify-around items-center py-3 px-6"
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 mx-auto w-full max-w-lg z-50 bg-white border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex justify-around items-center py-3 px-6"
          x-show="!isKeyboardOpen"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-4"
