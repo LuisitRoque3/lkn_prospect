@@ -453,13 +453,13 @@ new class extends Component
             <form wire:submit="agregar" class="space-y-4 bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Checkbox de Giros -->
-                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-60 overflow-y-auto flex flex-col justify-between">
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center pb-2 border-b border-gray-100 mb-2">
                                 <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">1. Seleccionar Giros</span>
                                 <button type="button" wire:click="seleccionarTodosGiros" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todos</button>
                             </div>
-                            <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto pr-1">
+                            <div class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
                                 @foreach($this->getGirosList() as $g)
                                     <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
                                         <input type="checkbox" value="{{ $g }}" wire:model="selectedGiros" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
@@ -478,13 +478,13 @@ new class extends Component
                     </div>
 
                     <!-- Checkbox de Ciudades -->
-                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white max-h-60 overflow-y-auto flex flex-col justify-between">
+                    <div class="space-y-2 border border-[#3d2b1f]/10 p-3 rounded-xl bg-white flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center pb-2 border-b border-gray-100 mb-2">
                                 <span class="text-[10px] font-black uppercase text-[#3d2b1f]/70">2. Seleccionar Ciudades</span>
                                 <button type="button" wire:click="seleccionarTodasCiudades" class="text-[9px] text-[#a3583d] font-bold hover:underline">Marcar Todas</button>
                             </div>
-                            <div class="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                            <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                                 @foreach($this->getCiudadesList() as $c)
                                     <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
                                         <input type="checkbox" value="{{ $c }}" wire:model="selectedCiudades" class="text-[#a3583d] focus:ring-[#a3583d]/20 border-[#3d2b1f]/10 rounded">
