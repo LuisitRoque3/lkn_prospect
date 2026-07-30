@@ -96,8 +96,8 @@
 
     </main>
 
-    <!-- BOTTOM TAB BAR (MOBILE-FIRST) - YOUTUBE 2026 STYLE -->
-    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex justify-around p-2"
+    <!-- BOTTOM TAB BAR (MOBILE-FIRST) - LOCKSPEND STYLE -->
+    <div class="sm:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-50 bg-white border-t border-[#3d2b1f]/10 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex justify-around items-center py-3 px-6"
          x-show="!isKeyboardOpen"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-4"
@@ -105,18 +105,22 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100 translate-y-0"
          x-transition:leave-end="opacity-0 translate-y-4">
-        <button @click="activeTab = 'leads'"
+        <!-- Leads Tab -->
+        <button type="button" 
+                @click="activeTab = 'leads'"
                 :class="activeTab === 'leads' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
-                class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1.5 flex-1">
+                class="flex flex-col items-center gap-1 cursor-pointer transition-all duration-200">
             <span class="text-xl">📊</span>
-            <span class="text-[9px] uppercase tracking-wider">Leads</span>
+            <span class="text-[8px] font-black uppercase tracking-wider">Leads</span>
         </button>
         @if(auth()->user()->is_admin)
-            <button @click="activeTab = 'config'"
+            <!-- Configuración Tab -->
+            <button type="button" 
+                    @click="activeTab = 'config'"
                     :class="activeTab === 'config' ? 'text-[#a3583d] scale-105 font-black' : 'text-[#3d2b1f]/60 font-semibold'"
-                    class="flex flex-col items-center gap-1 transition-all active:scale-95 py-1.5 flex-1">
+                    class="flex flex-col items-center gap-1 cursor-pointer transition-all duration-200">
                 <span class="text-xl">⚙️</span>
-                <span class="text-[9px] uppercase tracking-wider">Configurar</span>
+                <span class="text-[8px] font-black uppercase tracking-wider">Configurar</span>
             </button>
         @endif
     </div>

@@ -45,7 +45,12 @@ new class extends Component
     </div>
 
     <div class="mt-8 sm:mx-auto w-full max-w-md">
-        <div class="bg-white py-8 px-4 border border-[#3d2b1f]/10 shadow-lg rounded-3xl sm:px-10">
+        <div class="relative overflow-hidden bg-white py-8 px-4 border border-[#3d2b1f]/10 shadow-lg rounded-3xl sm:px-10">
+            <!-- Barra de progreso superior (feedback instantáneo para el cerebro) -->
+            <div wire:loading wire:target="login" class="absolute top-0 left-0 right-0 h-1 bg-[#a3583d] overflow-hidden">
+                <div class="h-full w-1/2 bg-white/40 animate-loading-bar rounded"></div>
+            </div>
+
             <form wire:submit="login" class="space-y-6">
                 <div>
                     <label for="email" class="block text-xs font-black uppercase tracking-wider text-[#3d2b1f]/70">
@@ -96,8 +101,20 @@ new class extends Component
 
                 <div>
                     <button type="submit" 
-                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-2xl shadow-md text-xs font-black uppercase tracking-wider text-white bg-[#a3583d] hover:bg-[#8f4730] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#a3583d] transition-all transform hover:-translate-y-0.5">
-                        Ingresar al Panel
+                            wire:loading.attr="disabled"
+                            wire:target="login"
+                            class="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-2xl shadow-md text-xs font-black uppercase tracking-wider text-white bg-[#a3583d] hover:bg-[#8f4730] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#a3583d] transition-all transform hover:-translate-y-0.5 disabled:opacity-85 disabled:cursor-not-allowed disabled:transform-none">
+                        <!-- Estado normal -->
+                        <span wire:loading.remove wire:target="login">Ingresar al Panel</span>
+                        
+                        <!-- Estado de carga (feedback instantáneo) -->
+                        <span wire:loading wire:target="login" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Iniciando Sesión...</span>
+                        </span>
                     </button>
                 </div>
             </form>
