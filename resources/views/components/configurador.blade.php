@@ -421,6 +421,18 @@ new class extends Component
         </div>
     </div>
 
+    <!-- Google Maps API Cost Warning Alert -->
+    <div class="p-4 bg-amber-50 border border-amber-200/50 rounded-2xl flex items-start gap-3 shadow-sm text-xs">
+        <span class="text-base mt-0.5">⚠️</span>
+        <div class="space-y-1">
+            <p class="font-black text-amber-900 uppercase tracking-wide">Control de Consumo de Google Places</p>
+            <p class="text-amber-800 font-medium leading-relaxed">
+                El motor está configurado exclusivamente para usar la <strong>Nueva API de Google Places (SearchText v1)</strong> con una tarifa reducida de $0.040 USD (~$0.80 MXN) por página. 
+                Recuerda monitorear tu panel de Google Cloud para evitar sobrefacturación y asegurarte de mantener el consumo dentro del límite de saldo mensual gratuito ($200 USD / ~5,000 consultas).
+            </p>
+        </div>
+    </div>
+
     <!-- SUB-MENÚ DE PESTAÑAS INTERNAS -->
     <div class="flex overflow-x-auto gap-2 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none border-b border-[#3d2b1f]/5">
         <button wire:click="changeSection('extractor')" 

@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 import mysql.connector
 from mysql.connector import Error
 from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, DENUE_API_TOKEN, CIUDADES, GIROS
+from extractor_inteligente import obtener_datos_places
 
 # Mapeo de ciudades a códigos de entidad federativa de México (INEGI)
 ENTIDADES_INEGI = {
@@ -85,45 +86,35 @@ def motor_denue_y_enriquecimiento(giro, ciudad):
         
         # Buscamos en Google Places
         query = f"{nombre_empresa} {ciudad}"
-        url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-        params = {"query": query, "key": GOOGLE_PLACES_API_KEY}
         
         try:
-            response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 200:
-                results = response.json().get('results', [])
-                if results:
-                    best_match = results[0]
-                    place_id = best_match.get('place_id')
+            results, _ = obtener_datos_places(query, max_results=1)
+            if results:
+                best_match = results[0]
+                telefono = best_match.get('formatted_phone_number')
+                web = best_match.get('website')
+                direccion = best_match.get('formatted_address', emp['direccion'])
+                
+                if telefono: # Filtro crítico
+                    dominio = urlparse(web).netloc.replace('www.', '') if web else 'N/A'
                     
-                    # Detalles
-                    detail_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,website,formatted_phone_number,formatted_address&key={GOOGLE_PLACES_API_KEY}"
-                    det_res = requests.get(detail_url, timeout=10)
-                    if det_res.status_code == 200:
-                        detalles = det_res.json().get('result', {})
-                        telefono = detalles.get('formatted_phone_number', '')
-                        web = detalles.get('website', '')
-                        
-                        if telefono: # Filtro crítico
-                            dominio = urlparse(web).netloc.replace('www.', '') if web else 'N/A'
-                            
-                            leads_enriquecidos.append({
-                                'empresa': nombre_empresa,
-                                'giro_negocio': giro,
-                                'director_nombre': 'Dueño / Encargado',
-                                'correo_corporativo': 'N/A',
-                                'telefono_whatsapp': telefono,
-                                'tamano_estimado': tamano, # Del DENUE
-                                'ubicacion_local': detalles.get('formatted_address', emp['direccion']),
-                                'url_origen': dominio,
-                                'fuente_descubrimiento': 'denue',
-                                'vacantes_activas': 0,
-                                'puestos_buscados': 'N/A',
-                                'tamano_empresa': tamano,
-                                'origen_detalles': f"Registro oficial DENUE (INEGI)"
-                            })
-                            print(f"[ENRIQUECER] [+] ¡Encontrado teléfono!: {telefono}")
-            time.sleep(0.5)
+                    leads_enriquecidos.append({
+                        'empresa': nombre_empresa,
+                        'giro_negocio': giro,
+                        'director_nombre': 'Dueño / Encargado',
+                        'correo_corporativo': 'N/A',
+                        'telefono_whatsapp': telefono,
+                        'tamano_estimado': tamano, # Del DENUE
+                        'ubicacion_local': direccion,
+                        'url_origen': dominio,
+                        'fuente_descubrimiento': 'denue',
+                        'vacantes_activas': 0,
+                        'puestos_buscados': 'N/A',
+                        'tamano_empresa': tamano,
+                        'origen_detalles': f"Registro oficial DENUE (INEGI)"
+                    })
+                    print(f"[ENRIQUECER] [+] ¡Encontrado teléfono!: {telefono}")
+            time.sleep(0.35)
         except Exception as e:
             print(f"[-] Error enriqueciendo lead de DENUE {nombre_empresa}: {e}")
             

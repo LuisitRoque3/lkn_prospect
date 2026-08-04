@@ -45,6 +45,7 @@ class Prospectos extends Component
     public $selectedProspectForWhatsapp = null;
     public $whatsappMessage = '';
     public $selectedTemplate = null;
+    public $whatsappTriggered = false;
 
     // WhatsApp Template CRUD Properties
     public $showTemplateManager = false;
@@ -298,13 +299,21 @@ class Prospectos extends Component
     public function closeWhatsappModal()
     {
         $this->showWhatsappModal = false;
-        $this->reset(['selectedProspectForWhatsapp', 'whatsappMessage', 'selectedTemplate', 'showTemplateManager', 'tempTemplateId', 'tempTemplateTitulo', 'tempTemplateMensaje']);
+        $this->reset(['selectedProspectForWhatsapp', 'whatsappMessage', 'selectedTemplate', 'showTemplateManager', 'tempTemplateId', 'tempTemplateTitulo', 'tempTemplateMensaje', 'whatsappTriggered']);
     }
 
-    public function markWhatsappAsSent()
+    public function triggerWhatsapp()
+    {
+        $this->whatsappTriggered = true;
+    }
+
+    public function confirmWhatsappStatus($hasWhatsapp)
     {
         if ($this->selectedProspectForWhatsapp) {
-            $this->selectedProspectForWhatsapp->estado_contacto = 'enviado';
+            $this->selectedProspectForWhatsapp->tiene_whatsapp = (bool)$hasWhatsapp;
+            if ($hasWhatsapp) {
+                $this->selectedProspectForWhatsapp->estado_contacto = 'enviado';
+            }
             $this->selectedProspectForWhatsapp->save();
         }
         $this->closeWhatsappModal();

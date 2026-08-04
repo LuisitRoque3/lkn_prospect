@@ -324,12 +324,22 @@
 
                             <!-- Botón WhatsApp -->
                             @if($prospecto->telefono_whatsapp)
-                                <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
-                                        onclick="window.hapticPulse('light')"
-                                        class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-green-700 rounded-xl transition-all active:scale-95 group/wa">
-                                    <span class="text-sm group-hover/wa:scale-110 transition-transform">💬</span>
-                                    <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">WhatsApp</span>
-                                </button>
+                                @if($prospecto->tiene_whatsapp === 0 || $prospecto->tiene_whatsapp === false)
+                                    <div class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-red-400 bg-red-50/50 rounded-xl cursor-not-allowed" title="Confirmado: Sin WhatsApp">
+                                        <span class="text-sm opacity-50 relative">
+                                            💬
+                                            <span class="absolute inset-0 flex items-center justify-center text-red-500 font-bold text-xs select-none">✕</span>
+                                        </span>
+                                        <span class="text-[7px] font-black uppercase tracking-wider text-red-500/70 mt-0.5">Sin WA</span>
+                                    </div>
+                                @else
+                                    <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
+                                            onclick="window.hapticPulse('light')"
+                                            class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 hover:bg-[#3d2b1f]/5 text-green-700 rounded-xl transition-all active:scale-95 group/wa">
+                                        <span class="text-sm group-hover/wa:scale-110 transition-transform">💬</span>
+                                        <span class="text-[8px] font-black uppercase tracking-wider text-[#3d2b1f]/75 mt-0.5">WhatsApp</span>
+                                    </button>
+                                @endif
                             @else
                                 <div class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-gray-300 rounded-xl cursor-not-allowed">
                                     <span class="text-sm opacity-40">💬</span>
@@ -462,11 +472,18 @@
 
                                     <!-- WhatsApp Button -->
                                     @if($prospecto->telefono_whatsapp)
-                                        <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
-                                                title="Enviar WhatsApp"
-                                                class="inline-flex items-center justify-center w-8 h-8 bg-[#25D366]/10 hover:bg-[#25D366] hover:text-white border border-[#25D366]/20 text-[#075E54] rounded-lg transition-all shadow-sm transform hover:scale-110">
-                                            💬
-                                        </button>
+                                        @if($prospecto->tiene_whatsapp === 0 || $prospecto->tiene_whatsapp === false)
+                                            <div class="inline-flex items-center justify-center w-8 h-8 bg-red-50 border border-red-200 text-red-400 rounded-lg cursor-not-allowed relative" title="Confirmado: Sin WhatsApp">
+                                                💬
+                                                <span class="absolute -top-1 -right-1 text-[8px] bg-red-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">✕</span>
+                                            </div>
+                                        @else
+                                            <button wire:click="openWhatsappModal({{ $prospecto->id }})" 
+                                                    title="Enviar WhatsApp"
+                                                    class="inline-flex items-center justify-center w-8 h-8 bg-[#25D366]/10 hover:bg-[#25D366] hover:text-white border border-[#25D366]/20 text-[#075E54] rounded-lg transition-all shadow-sm transform hover:scale-110">
+                                                💬
+                                            </button>
+                                        @endif
                                     @else
                                         <div class="inline-flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-100 text-gray-300 rounded-lg cursor-not-allowed" title="Sin Teléfono">💬</div>
                                     @endif
@@ -694,44 +711,81 @@
                                 </div>
                             </div>
                         @else
-                            <!-- SELECTOR Y PREVISUALIZACIÓN -->
-                            <div class="flex justify-between items-center">
-                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Seleccionar Plantilla de Mensaje</label>
-                                <button type="button" wire:click="$set('showTemplateManager', true)" class="text-[9px] font-black uppercase tracking-wider text-[#a3583d] hover:underline flex items-center gap-1">
-                                    ⚙️ Gestionar Catálogo
-                                </button>
-                            </div>
+                            @if(!$whatsappTriggered)
+                                <!-- SELECTOR Y PREVISUALIZACIÓN -->
+                                <div class="flex justify-between items-center">
+                                    <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Seleccionar Plantilla de Mensaje</label>
+                                    <button type="button" wire:click="$set('showTemplateManager', true)" class="text-[9px] font-black uppercase tracking-wider text-[#a3583d] hover:underline flex items-center gap-1">
+                                        ⚙️ Gestionar Catálogo
+                                    </button>
+                                </div>
 
-                            <div class="space-y-1">
-                                <select wire:model.live="selectedTemplate" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
-                                    <option value="">-- Sin plantilla / Mensaje vacío --</option>
-                                    @foreach($this->getTemplates() as $pl)
-                                        <option value="{{ $pl->id }}">{{ $pl->titulo }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                <div class="space-y-1">
+                                    <select wire:model.live="selectedTemplate" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-bold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all">
+                                        <option value="">-- Sin plantilla / Mensaje vacío --</option>
+                                        @foreach($this->getTemplates() as $pl)
+                                            <option value="{{ $pl->id }}">{{ $pl->titulo }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
-                            <!-- Editor del Mensaje -->
-                            <div class="space-y-1">
-                                <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Editar Mensaje (Personalizar si es necesario)</label>
-                                <textarea wire:model="whatsappMessage" rows="5" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-semibold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all resize-none"></textarea>
-                            </div>
+                                <!-- Editor del Mensaje -->
+                                <div class="space-y-1">
+                                    <label class="block font-black uppercase text-[#3d2b1f]/70 text-[9px] tracking-wider">Editar Mensaje (Personalizar si es necesario)</label>
+                                    <textarea wire:model="whatsappMessage" rows="5" class="w-full px-4 py-3 bg-[#fdfaf6] border border-[#3d2b1f]/10 rounded-xl text-xs font-semibold text-[#3d2b1f] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d] transition-all resize-none"></textarea>
+                                </div>
 
-                            <!-- Botones de Acción -->
-                            <div class="flex justify-end gap-3 pt-4 border-t border-[#3d2b1f]/10">
-                                <button type="button" wire:click="closeWhatsappModal" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
-                                    Cancelar
-                                </button>
-                                
-                                <!-- Botón Enviar (Abre WhatsApp en nueva pestaña y marca como enviado) -->
-                                <a href="https://wa.me/{{ $selectedProspectForWhatsapp->clean_phone }}?text={{ urlencode($whatsappMessage) }}" 
-                                   target="_blank"
-                                   wire:click="markWhatsappAsSent"
-                                   onclick="window.hapticPulse('success')"
-                                   class="inline-flex items-center px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
-                                    💬 Disparar WhatsApp
-                                </a>
-                            </div>
+                                <!-- Botones de Acción -->
+                                <div class="flex justify-end gap-3 pt-4 border-t border-[#3d2b1f]/10">
+                                    <button type="button" wire:click="closeWhatsappModal" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all">
+                                        Cancelar
+                                    </button>
+                                    
+                                    <!-- Botón Enviar (Abre WhatsApp en nueva pestaña y marca como enviado) -->
+                                    <a href="https://wa.me/{{ $selectedProspectForWhatsapp->clean_phone }}?text={{ urlencode($whatsappMessage) }}" 
+                                       target="_blank"
+                                       wire:click="triggerWhatsapp"
+                                       onclick="window.hapticPulse('success')"
+                                       class="inline-flex items-center px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                                        💬 Disparar WhatsApp
+                                    </a>
+                                </div>
+                            @else
+                                <!-- Pantalla de Confirmación de Estado WhatsApp -->
+                                <div class="space-y-6 py-4 text-center">
+                                    <div class="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-sm text-2xl">
+                                        💬
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="text-sm font-black uppercase tracking-wider text-[#3d2b1f]">
+                                            ¿El número tiene WhatsApp?
+                                        </h3>
+                                        <p class="text-[10px] text-[#3d2b1f]/70 font-semibold max-w-xs mx-auto">
+                                            Selecciona si pudiste abrir el chat de WhatsApp correctamente para este número. Esto actualizará el estado del prospecto.
+                                        </p>
+                                    </div>
+
+                                    <div class="flex flex-col gap-2 max-w-xs mx-auto">
+                                        <button type="button" 
+                                                wire:click="confirmWhatsappStatus(true)" 
+                                                onclick="window.hapticPulse('success')"
+                                                class="w-full py-3 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                                            ✅ Sí, tiene WhatsApp (Pasa a Contactado)
+                                        </button>
+                                        <button type="button" 
+                                                wire:click="confirmWhatsappStatus(false)" 
+                                                onclick="window.hapticPulse('warning')"
+                                                class="w-full py-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm">
+                                            ❌ No tiene WhatsApp (Seguir Pendiente)
+                                        </button>
+                                        <button type="button" 
+                                                wire:click="$set('whatsappTriggered', false)" 
+                                                class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all mt-2">
+                                            ⬅️ Volver a editar / Disparar de nuevo
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
                         @endif
                     </div>
 

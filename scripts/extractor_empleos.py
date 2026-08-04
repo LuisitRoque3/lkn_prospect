@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import mysql.connector
 from mysql.connector import Error
 from config import DB_CONFIG, GOOGLE_PLACES_API_KEY, CIUDADES, GIROS
+from extractor_inteligente import obtener_datos_places
 # Importaciones locales se manejan dentro de las funciones para evitar importaciones circulares
 
 def buscar_vacantes_web(giro, ciudad):
@@ -84,45 +85,35 @@ def motor_empleos_y_enriquecimiento(giro, ciudad):
         
         # Usamos Google Places para buscar esta empresa específica
         query = f"{nombre_empresa} {ciudad}"
-        url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-        params = {"query": query, "key": GOOGLE_PLACES_API_KEY}
         
         try:
-            response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 200:
-                results = response.json().get('results', [])
-                if results:
-                    best_match = results[0] # El primer resultado suele ser la coincidencia exacta
-                    place_id = best_match.get('place_id')
+            results, _ = obtener_datos_places(query, max_results=1)
+            if results:
+                best_match = results[0]
+                telefono = best_match.get('formatted_phone_number')
+                web = best_match.get('website')
+                direccion = best_match.get('formatted_address', emp['ciudad'])
+                
+                if telefono: # Filtro crítico: Debe tener teléfono
+                    dominio = urlparse(web).netloc.replace('www.', '') if web else 'N/A'
                     
-                    # Obtener detalles
-                    detail_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,website,formatted_phone_number,formatted_address&key={GOOGLE_PLACES_API_KEY}"
-                    det_res = requests.get(detail_url, timeout=10)
-                    if det_res.status_code == 200:
-                        detalles = det_res.json().get('result', {})
-                        telefono = detalles.get('formatted_phone_number', '')
-                        web = detalles.get('website', '')
-                        
-                        if telefono: # Filtro crítico: Debe tener teléfono
-                            dominio = urlparse(web).netloc.replace('www.', '') if web else 'N/A'
-                            
-                            leads_enriquecidos.append({
-                                'empresa': nombre_empresa,
-                                'giro_negocio': giro,
-                                'director_nombre': 'Dueño / Encargado',
-                                'correo_corporativo': 'N/A',
-                                'telefono_whatsapp': telefono,
-                                'tamano_estimado': 'Mediana (Hiring)',
-                                'ubicacion_local': detalles.get('formatted_address', emp['ciudad']),
-                                'url_origen': dominio,
-                                'fuente_descubrimiento': 'empleo',
-                                'vacantes_activas': 1,
-                                'puestos_buscados': puesto,
-                                'tamano_empresa': 'Contratando',
-                                'origen_detalles': f"Vacante: {puesto}"
-                            })
-                            print(f"[ENRIQUECER] [+] ¡Encontrado teléfono!: {telefono}")
-            time.sleep(0.5) # Cuidar cuotas
+                    leads_enriquecidos.append({
+                        'empresa': nombre_empresa,
+                        'giro_negocio': giro,
+                        'director_nombre': 'Dueño / Encargado',
+                        'correo_corporativo': 'N/A',
+                        'telefono_whatsapp': telefono,
+                        'tamano_estimado': 'Mediana (Hiring)',
+                        'ubicacion_local': direccion,
+                        'url_origen': dominio,
+                        'fuente_descubrimiento': 'empleo',
+                        'vacantes_activas': 1,
+                        'puestos_buscados': puesto,
+                        'tamano_empresa': 'Contratando',
+                        'origen_detalles': f"Vacante: {puesto}"
+                    })
+                    print(f"[ENRIQUECER] [+] ¡Encontrado teléfono!: {telefono}")
+            time.sleep(0.35) # Cuidar cuotas
         except Exception as e:
             print(f"[-] Error enriqueciendo {nombre_empresa}: {e}")
             
