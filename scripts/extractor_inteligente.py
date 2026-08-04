@@ -233,7 +233,21 @@ def escanear_sitio_web_oficial(url):
         for link in soup.find_all('a', href=True):
             href = link['href']
             if 'wa.me' in href or 'api.whatsapp.com/send' in href or 'whatsapp.com/send' in href:
-                phone_digits = "".join(filter(str.isdigit, href))
+                # Evitar basura de parámetros de consulta (ej: %20 -> 20) limpiando el query string
+                base_url = href.split('?')[0]
+                
+                # Si contiene parámetro explícito de teléfono
+                if 'phone=' in href:
+                    from urllib.parse import urlparse, parse_qs
+                    try:
+                        query_params = parse_qs(urlparse(href).query)
+                        phone_val = query_params.get('phone')
+                        if phone_val:
+                            base_url = phone_val[0]
+                    except Exception:
+                        pass
+                
+                phone_digits = "".join(filter(str.isdigit, base_url))
                 if len(phone_digits) >= 10:
                     if len(phone_digits) == 10:
                         whatsapp_tel = "52" + phone_digits
