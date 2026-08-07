@@ -20,8 +20,13 @@ new class extends Component
     // Tarea que se está editando
     public $editingConfigId = null;
 
-    // Pestaña Interna activa: 'extractor', 'organizaciones', 'usuarios'
+    // Pestaña Interna activa: 'extractor', 'organizaciones', 'usuarios', 'historial'
     public $currentSection = 'extractor';
+
+    // Filtros e inputs para el historial
+    public $searchHistorial = '';
+    public $filterTipo = '';
+    public $filterEstado = '';
 
     // Propiedades para CRUD Organizaciones
     public $orgNombre = '';
@@ -331,6 +336,63 @@ new class extends Component
         return $users;
     }
 
+    public function getHistorial()
+    {
+        try {
+            $query = DB::table('historial_extracciones')
+                ->leftJoin('organizaciones', 'historial_extracciones.organizacion_id', '=', 'organizaciones.id')
+                ->select('historial_extracciones.*', 'organizaciones.nombre as org_name');
+                
+            if (!empty($this->searchHistorial)) {
+                $query->where(function($q) {
+                    $q->where('historial_extracciones.giro', 'like', '%' . $this->searchHistorial . '%')
+                      ->orWhere('historial_extracciones.ciudad', 'like', '%' . $this->searchHistorial . '%')
+                      ->orWhere('organizaciones.nombre', 'like', '%' . $this->searchHistorial . '%');
+                });
+            }
+            
+            if (!empty($this->filterTipo)) {
+                $query->where('historial_extracciones.tipo', $this->filterTipo);
+            }
+            
+            if (!empty($this->filterEstado)) {
+                $query->where('historial_extracciones.estado', $this->filterEstado);
+            }
+            
+            return $query->orderBy('historial_extracciones.created_at', 'desc')->get();
+        } catch (\Exception $e) {
+            return collect();
+        }
+    }
+    
+    public function getMetricas()
+    {
+        try {
+            $total = DB::table('historial_extracciones')->count();
+            $completados = DB::table('historial_extracciones')->where('estado', 'completado')->count();
+            $errores = DB::table('historial_extracciones')->where('estado', 'error')->count();
+            
+            $encontrados = DB::table('historial_extracciones')->sum('leads_encontrados');
+            $nuevos = DB::table('historial_extracciones')->sum('leads_nuevos');
+            
+            $efectividad = $encontrados > 0 ? round(($nuevos / $encontrados) * 100, 1) : 0;
+            
+            return [
+                'total' => $total,
+                'completados' => $completados,
+                'errores' => $errores,
+                'encontrados' => $encontrados,
+                'nuevos' => $nuevos,
+                'efectividad' => $efectividad
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total' => 0, 'completados' => 0, 'errores' => 0,
+                'encontrados' => 0, 'nuevos' => 0, 'efectividad' => 0
+            ];
+        }
+    }
+
     public function dispararMotor()
     {
         abort_unless(Auth::user()->is_admin, 403);
@@ -446,6 +508,10 @@ new class extends Component
         <button wire:click="changeSection('usuarios')" 
                 class="px-4 py-2 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all whitespace-nowrap {{ $currentSection === 'usuarios' ? 'border-[#a3583d] text-[#a3583d]' : 'border-transparent text-[#3d2b1f]/60 hover:text-[#3d2b1f]' }}">
             👥 Asignar Usuarios
+        </button>
+        <button wire:click="changeSection('historial')" 
+                class="px-4 py-2 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all whitespace-nowrap {{ $currentSection === 'historial' ? 'border-[#a3583d] text-[#a3583d]' : 'border-transparent text-[#3d2b1f]/60 hover:text-[#3d2b1f]' }}">
+            📊 Historial & Métricas
         </button>
     </div>
 
@@ -822,6 +888,221 @@ new class extends Component
                     </table>
                 </div>
             </div>
+        </div>
+    @endif
+
+    <!-- ======================================================================
+         SECCIÓN D: HISTORIAL & MÉTRICAS (DASHBOARD INTELIGENTE)
+         ====================================================================== -->
+    @if($currentSection === 'historial')
+        <div class="space-y-6" x-data="{ activeErrorId: null }">
+            
+            @php
+                $metricas = $this->getMetricas();
+                $historial = $this->getHistorial();
+            @endphp
+
+            <!-- KPI METRICS GRID -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Ejecuciones -->
+                <div class="bg-[#fdfaf6] border border-[#3d2b1f]/10 p-4 rounded-2xl shadow-sm">
+                    <span class="text-xs text-[#3d2b1f]/50 font-black uppercase tracking-wider">Ejecuciones</span>
+                    <p class="text-2xl font-black text-[#3d2b1f] mt-1">{{ $metricas['total'] }}</p>
+                    <div class="text-[9px] text-gray-400 font-semibold mt-1">
+                        <span class="text-emerald-600 font-black">✓ {{ $metricas['completados'] }}</span> Exitosas | 
+                        <span class="text-red-500 font-black">⚠ {{ $metricas['errores'] }}</span> Errores
+                    </div>
+                </div>
+
+                <!-- Leads Encontrados -->
+                <div class="bg-[#fdfaf6] border border-[#3d2b1f]/10 p-4 rounded-2xl shadow-sm">
+                    <span class="text-xs text-[#3d2b1f]/50 font-black uppercase tracking-wider">Leads Google</span>
+                    <p class="text-2xl font-black text-[#3d2b1f] mt-1">{{ $metricas['encontrados'] }}</p>
+                    <span class="text-[9px] text-gray-400 font-semibold">Total de leads mapeados</span>
+                </div>
+
+                <!-- Leads Nuevos -->
+                <div class="bg-[#fdfaf6] border border-[#3d2b1f]/10 p-4 rounded-2xl shadow-sm">
+                    <span class="text-xs text-[#a3583d] font-black uppercase tracking-wider">Ingresados (Nuevos)</span>
+                    <p class="text-2xl font-black text-[#a3583d] mt-1">{{ $metricas['nuevos'] }}</p>
+                    <span class="text-[9px] text-emerald-600 font-black">Nuevos prospectos en CRM</span>
+                </div>
+
+                <!-- Efectividad -->
+                <div class="bg-[#fdfaf6] border border-[#3d2b1f]/10 p-4 rounded-2xl shadow-sm">
+                    <span class="text-xs text-[#3d2b1f]/50 font-black uppercase tracking-wider">Tasa de Novedad</span>
+                    <p class="text-2xl font-black text-emerald-600 mt-1">{{ $metricas['efectividad'] }}%</p>
+                    <span class="text-[9px] text-gray-400 font-semibold">Porcentaje de leads nuevos útiles</span>
+                </div>
+            </div>
+
+            <!-- SMART FILTER ROW -->
+            <div class="flex flex-col md:flex-row gap-3 bg-[#fdfaf6] p-4 rounded-2xl border border-[#3d2b1f]/5">
+                <div class="flex-1">
+                    <input type="text" 
+                           wire:model.live.debounce.300ms="searchHistorial" 
+                           placeholder="🔍 Buscar por giro, ciudad u org..." 
+                           class="w-full px-4 py-2 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none focus:ring-2 focus:ring-[#a3583d]/20 focus:border-[#a3583d]">
+                </div>
+                <div class="flex gap-2">
+                    <select wire:model.live="filterTipo" class="px-3 py-2 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none">
+                        <option value="">Todos los Orígenes</option>
+                        <option value="manual">Manual 🚀</option>
+                        <option value="automatica">Automatica ⚙️</option>
+                    </select>
+                    <select wire:model.live="filterEstado" class="px-3 py-2 bg-white border border-[#3d2b1f]/10 rounded-xl text-xs text-[#3d2b1f] focus:outline-none">
+                        <option value="">Todos los Estados</option>
+                        <option value="ejecutando">Ejecutando ⏳</option>
+                        <option value="completado">Exitoso ✓</option>
+                        <option value="error">Error ⚠</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- HISTORY LIST (MÓVIL: TARJETAS) -->
+            <div class="block sm:hidden space-y-4">
+                @forelse($historial as $h)
+                    <div class="bg-white border border-[#3d2b1f]/10 p-4 rounded-2xl space-y-3 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-gray-400 font-mono">
+                                {{ \Carbon\Carbon::parse($h->created_at)->timezone('America/Mexico_City')->format('d M, h:i A') }}
+                            </span>
+                            <span class="px-2 py-0.5 text-[8px] font-black uppercase rounded-full {{ $h->tipo === 'manual' ? 'bg-gray-100 text-gray-600' : 'bg-blue-50 text-blue-700' }}">
+                                {{ $h->tipo }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <p class="text-xs font-black text-[#3d2b1f] capitalize">
+                                {{ $h->giro }} en <span class="uppercase">{{ $h->ciudad }}</span>
+                            </p>
+                            @if($h->org_name)
+                                <p class="text-[10px] text-gray-400 font-bold">Org: <span class="text-[#3d2b1f]">{{ $h->org_name }}</span></p>
+                            @endif
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-50 text-[10px]">
+                            <div>
+                                <span class="font-bold text-gray-400">Leads: </span>
+                                <span class="font-black text-[#3d2b1f]">{{ $h->leads_encontrados }}</span> 
+                                <span class="text-gray-400">/</span> 
+                                <span class="font-black text-[#a3583d]">+{{ $h->leads_nuevos }} nuevos</span>
+                            </div>
+                            
+                            <!-- Estado -->
+                            <div>
+                                @if($h->estado === 'ejecutando')
+                                    <span class="text-[9px] font-black text-amber-600 uppercase flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Ejecutando
+                                    </span>
+                                @elseif($h->estado === 'completado')
+                                    <span class="text-[9px] font-black text-emerald-600 uppercase">✓ Completado</span>
+                                @else
+                                    <button @click="activeErrorId = activeErrorId === {{ $h->id }} ? null : {{ $h->id }}" 
+                                            class="text-[9px] font-black text-red-500 uppercase hover:underline">
+                                        ⚠ Error (Ver)
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Panel de Error Desplegable -->
+                        @if($h->error_mensaje)
+                            <div x-show="activeErrorId === {{ $h->id }}" x-cloak x-collapse class="p-3 bg-red-50 text-red-800 text-[10px] font-mono rounded-xl border border-red-100 mt-2 overflow-x-auto">
+                                {{ $h->error_mensaje }}
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="text-center p-6 text-gray-400 text-xs font-semibold">
+                        No hay registros en el historial con los filtros activos.
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- HISTORY LIST (ESCRITORIO: TABLA) -->
+            <div class="hidden sm:block overflow-hidden border border-[#3d2b1f]/10 rounded-2xl">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-[#3d2b1f]/10">
+                            <th class="p-3 font-bold text-[#3d2b1f]/70">Fecha / Hora</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Tipo</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70">Tarea (Giro / Ciudad)</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70">Grupo Asignado</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Leads Mapeados</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Nuevos Ingresos</th>
+                            <th class="p-3 font-bold text-[#3d2b1f]/70 text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#3d2b1f]/5">
+                        @forelse($historial as $h)
+                            <tr class="hover:bg-[#fdfaf6]/50">
+                                <td class="p-3 font-mono text-gray-500 whitespace-nowrap">
+                                    {{ \Carbon\Carbon::parse($h->created_at)->timezone('America/Mexico_City')->format('d/m/Y - h:i A') }}
+                                </td>
+                                <td class="p-3 text-center">
+                                    <span class="inline-block px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full {{ $h->tipo === 'manual' ? 'bg-gray-100 text-gray-600 border border-gray-200' : 'bg-blue-50 text-blue-700 border border-blue-100' }}">
+                                        {{ $h->tipo }}
+                                    </span>
+                                </td>
+                                <td class="p-3">
+                                    <div class="font-bold text-[#3d2b1f] capitalize">{{ $h->giro }}</div>
+                                    <div class="text-[10px] text-gray-500 font-semibold uppercase">{{ $h->ciudad }}</div>
+                                </td>
+                                <td class="p-3 font-bold text-[#3d2b1f]">
+                                    {{ $h->org_name ?: 'Catálogo Fallback' }}
+                                </td>
+                                <td class="p-3 text-center font-bold text-[#3d2b1f]">{{ $h->leads_encontrados }}</td>
+                                <td class="p-3 text-center">
+                                    @if($h->leads_nuevos > 0)
+                                        <span class="inline-block px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 font-black rounded-lg">
+                                            +{{ $h->leads_nuevos }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400 font-semibold">0</span>
+                                    @endif
+                                </td>
+                                <td class="p-3 text-center whitespace-nowrap">
+                                    @if($h->estado === 'ejecutando')
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-lg">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            Ejecutando
+                                        </span>
+                                    @elseif($h->estado === 'completado')
+                                        <span class="inline-block px-2.5 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-lg">
+                                            ✓ Completado
+                                        </span>
+                                    @else
+                                        <button @click="activeErrorId = activeErrorId === {{ $h->id }} ? null : {{ $h->id }}" 
+                                                class="inline-block px-2.5 py-0.5 bg-red-50 border border-red-100 text-red-700 text-[10px] font-black uppercase rounded-lg hover:bg-red-100 transition-all cursor-pointer">
+                                            ⚠ Error
+                                        </button>
+                                    @endif
+                                </td>
+                            </tr>
+                            
+                            <!-- Row de Error Desplegable -->
+                            @if($h->error_mensaje)
+                                <tr x-show="activeErrorId === {{ $h->id }}" x-cloak class="bg-red-50/30">
+                                    <td colspan="7" class="p-4 border-t border-red-100">
+                                        <div class="text-[10px] font-mono text-red-800 bg-red-50 border border-red-100 rounded-xl p-3 max-h-60 overflow-y-auto whitespace-pre-wrap">
+                                            {{ $h->error_mensaje }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
+                        @empty
+                            <tr>
+                                <td colspan="7" class="p-5 text-center text-[#3d2b1f]/40 font-medium">
+                                    No hay registros de historial de extracción.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     @endif
 

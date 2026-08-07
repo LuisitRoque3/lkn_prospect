@@ -277,6 +277,31 @@ def escanear_sitio_web_oficial(url):
 def persistir_leads(leads):
     if not leads: return
     
+    # Normalizar teléfonos de inmediato para evitar duplicados por formato (espacios, guiones, etc.)
+    for l in leads:
+        if l.get('telefono_whatsapp'):
+            digits = "".join(filter(str.isdigit, l['telefono_whatsapp']))
+            if digits.startswith('521'):
+                l['telefono_whatsapp'] = digits[:13]
+            elif digits.startswith('52'):
+                l['telefono_whatsapp'] = digits[:12]
+            else:
+                l['telefono_whatsapp'] = digits[:10]
+
+    # Deduplicar en memoria tras la normalización
+    leads_dict = {}
+    for l in leads:
+        tel = l.get('telefono_whatsapp')
+        if not tel:
+            continue
+        if tel in leads_dict:
+            # Si el nuevo lead tiene mejor información de correo, lo preferimos
+            if (l.get('correo_corporativo') and l['correo_corporativo'] != 'N/A') and (not leads_dict[tel].get('correo_corporativo') or leads_dict[tel]['correo_corporativo'] == 'N/A'):
+                leads_dict[tel] = l
+        else:
+            leads_dict[tel] = l
+    leads = list(leads_dict.values())
+    
     # --- ENRIQUECIMIENTO CON MEXICOPYMES Y SITIOS WEB OFICIALES ---
     print(f"\n[*] Nutriendo {len(leads)} leads...")
     for idx, l in enumerate(leads):
@@ -306,6 +331,24 @@ def persistir_leads(leads):
                     l['correo_corporativo'] = site_info['correo']
                     print(f"   [+] Correo corporativo detectado en su web: {site_info['correo']}")
             
+    # Calcular cuántos son realmente nuevos antes de insertar
+    nuevos_count = 0
+    total_encontrados = len(leads)
+    telefonos = [l['telefono_whatsapp'] for l in leads if l.get('telefono_whatsapp')]
+    if telefonos:
+        try:
+            temp_conn = mysql.connector.connect(**DB_CONFIG)
+            temp_cur = temp_conn.cursor()
+            format_strings = ','.join(['%s'] * len(telefonos))
+            temp_cur.execute(f"SELECT telefono_whatsapp FROM prospectos_scrapping WHERE telefono_whatsapp IN ({format_strings})", tuple(telefonos))
+            existentes = {r[0] for r in temp_cur.fetchall()}
+            nuevos_count = len([t for t in telefonos if t not in existentes])
+            temp_cur.close()
+            temp_conn.close()
+        except Exception as e:
+            print(f"[-] Error al pre-calcular nuevos: {e}")
+            nuevos_count = total_encontrados
+
     try:
         conexion = mysql.connector.connect(**DB_CONFIG)
         cursor = conexion.cursor()
@@ -341,6 +384,8 @@ def persistir_leads(leads):
         if 'conexion' in locals() and conexion.is_connected():
             cursor.close()
             conexion.close()
+            
+    return total_encontrados, nuevos_count
 
 if __name__ == "__main__":
     print("[*] Iniciando Extractor Google Maps de forma independiente...")

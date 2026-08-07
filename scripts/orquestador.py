@@ -46,53 +46,99 @@ def obtener_configuraciones_activas():
             conexion.close()
     return configs
 
-def ejecutar_extraccion_para_combinacion(giro, ciudad, organizacion_id=None):
+def registrar_inicio_historial(tipo, giro, ciudad, organizacion_id):
+    try:
+        conexion = mysql.connector.connect(**DB_CONFIG)
+        cursor = conexion.cursor()
+        query = """INSERT INTO historial_extracciones 
+                   (tipo, giro, ciudad, organizacion_id, estado, created_at, updated_at) 
+                   VALUES (%s, %s, %s, %s, 'ejecutando', NOW(), NOW())"""
+        cursor.execute(query, (tipo, giro, ciudad, organizacion_id))
+        conexion.commit()
+        historial_id = cursor.lastrowid
+        return historial_id
+    except Exception as e:
+        print(f"[-] Error al registrar inicio de historial: {e}")
+        return None
+    finally:
+        if 'conexion' in locals() and conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
+def registrar_fin_historial(historial_id, leads_encontrados, leads_nuevos, estado='completado', error_msg=None):
+    if not historial_id:
+        return
+    try:
+        conexion = mysql.connector.connect(**DB_CONFIG)
+        cursor = conexion.cursor()
+        query = """UPDATE historial_extracciones 
+                   SET leads_encontrados = %s, leads_nuevos = %s, estado = %s, error_mensaje = %s, updated_at = NOW() 
+                   WHERE id = %s"""
+        cursor.execute(query, (leads_encontrados, leads_nuevos, estado, error_msg, historial_id))
+        conexion.commit()
+    except Exception as e:
+        print(f"[-] Error al registrar fin de historial: {e}")
+    finally:
+        if 'conexion' in locals() and conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
+def ejecutar_extraccion_para_combinacion(giro, ciudad, organizacion_id=None, tipo='automatica'):
     print("=" * 60)
-    print(f"[*] PROCESANDO TAREA DE EXTRACCIÓN")
+    print(f"[*] PROCESANDO TAREA DE EXTRACCIÓN ({tipo.upper()})")
     print(f"[*] Giro Elegido: {giro.upper()}")
     print(f"[*] Ciudad Elegida: {ciudad.upper()}")
     print(f"[*] Organización Destino (ID): {organizacion_id}")
     print("=" * 60)
     
+    historial_id = registrar_inicio_historial(tipo, giro, ciudad, organizacion_id)
     todos_los_leads = []
     
-    # --- FASE 1: GOOGLE MAPS ---
     try:
-        leads_maps = motor_google_places(giro, ciudad)
-        todos_los_leads.extend(leads_maps)
-    except Exception as e:
-        print(f"[-] Fallo en Módulo Google Maps: {e}")
-        traceback.print_exc()
+        # --- FASE 1: GOOGLE MAPS ---
+        try:
+            leads_maps = motor_google_places(giro, ciudad)
+            todos_los_leads.extend(leads_maps)
+        except Exception as e:
+            print(f"[-] Fallo en Módulo Google Maps: {e}")
+            traceback.print_exc()
 
-    # --- FASE 2: VACANTES DE EMPLEO (Computrabajo) ---
-    try:
-        leads_empleos = motor_empleos_y_enriquecimiento(giro, ciudad)
-        todos_los_leads.extend(leads_empleos)
-    except Exception as e:
-        print(f"[-] Fallo en Módulo Empleos: {e}")
+        # --- FASE 2: VACANTES DE EMPLEO (Computrabajo) ---
+        try:
+            leads_empleos = motor_empleos_y_enriquecimiento(giro, ciudad)
+            todos_los_leads.extend(leads_empleos)
+        except Exception as e:
+            print(f"[-] Fallo en Módulo Empleos: {e}")
 
-    # --- FASE 3: DENUE INEGI ---
-    try:
-        leads_denue = motor_denue_y_enriquecimiento(giro, ciudad)
-        todos_los_leads.extend(leads_denue)
-    except Exception as e:
-        print(f"[-] Fallo en Módulo DENUE: {e}")
+        # --- FASE 3: DENUE INEGI ---
+        try:
+            leads_denue = motor_denue_y_enriquecimiento(giro, ciudad)
+            todos_los_leads.extend(leads_denue)
+        except Exception as e:
+            print(f"[-] Fallo en Módulo DENUE: {e}")
 
-    # --- PROCESAMIENTO E INYECCIÓN ---
-    if todos_los_leads:
-        # Asignar el organizacion_id y limpiar user_id (para que pertenezca a nivel grupal)
-        for lead in todos_los_leads:
-            lead['organizacion_id'] = organizacion_id
-            lead['user_id'] = None
+        # --- PROCESAMIENTO E INYECCIÓN ---
+        if todos_los_leads:
+            # Asignar el organizacion_id y limpiar user_id (para que pertenezca a nivel grupal)
+            for lead in todos_los_leads:
+                lead['organizacion_id'] = organizacion_id
+                lead['user_id'] = None
+                
+            # Eliminar duplicados de teléfonos en esta corrida
+            leads_unicos = {l['telefono_whatsapp']: l for l in todos_los_leads}.values()
+            leads_finales = list(leads_unicos)
             
-        # Eliminar duplicados de teléfonos en esta corrida
-        leads_unicos = {l['telefono_whatsapp']: l for l in todos_los_leads}.values()
-        leads_finales = list(leads_unicos)
-        
-        print(f"\n[*] Guardando {len(leads_finales)} leads únicos...")
-        persistir_leads(leads_finales)
-    else:
-        print("\n[-] No se obtuvieron leads para esta combinación.")
+            print(f"\n[*] Guardando {len(leads_finales)} leads únicos...")
+            total_encontrados, nuevos_count = persistir_leads(leads_finales)
+            registrar_fin_historial(historial_id, total_encontrados, nuevos_count, estado='completado')
+        else:
+            print("\n[-] No se obtuvieron leads para esta combinación.")
+            registrar_fin_historial(historial_id, 0, 0, estado='completado')
+            
+    except Exception as e:
+        err_msg = traceback.format_exc()
+        print(f"[-] Error grave en la corrida: {e}")
+        registrar_fin_historial(historial_id, 0, 0, estado='error', error_msg=err_msg)
 
 def parse_param(param_str, fallback_catalog):
     """
@@ -117,7 +163,7 @@ def main():
         if len(sys.argv) > 2:
             giro_arg = sys.argv[1]
             ciudad_arg = sys.argv[2]
-            ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, organizacion_id=None)
+            ejecutar_extraccion_para_combinacion(giro_arg, ciudad_arg, organizacion_id=None, tipo='manual')
             return
 
         # Consultar tareas programadas por organizaciones en la base de datos
@@ -137,14 +183,15 @@ def main():
                 ejecutar_extraccion_para_combinacion(
                     giro=giro_elegido, 
                     ciudad=ciudad_elegida, 
-                    organizacion_id=tarea['organizacion_id']
+                    organizacion_id=tarea['organizacion_id'],
+                    tipo='automatica'
                 )
         else:
             # Fallback histórico: Si no hay tareas activas, hacer una corrida aleatoria de catálogo completo
             print("[*] No hay tareas activas programadas en BD. Usando fallback de catálogo aleatorio...")
             giro_aleatorio = random.choice(GIROS)
             ciudad_aleatoria = random.choice(CIUDADES)
-            ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, organizacion_id=None)
+            ejecutar_extraccion_para_combinacion(giro_aleatorio, ciudad_aleatoria, organizacion_id=None, tipo='automatica')
     finally:
         actualizar_estado_motor("completado")
 
